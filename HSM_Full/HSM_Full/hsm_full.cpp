@@ -18,13 +18,11 @@ extern "C" {
 #include <string>
 #include <iostream>
 #include <wiringSerial.h>
+#include <checksum.h>
 
 //variables for sending and receiving over serial
 int numToSend;
-//int numToSend = 300;
-int numReceived;
 bool recvInProgress = false;
-char received[2];
 
 PyObject *u_p, *udot_p, *uddot_p, *f_p, *eq_p, *dt,*iter;
 PyObject *pythonArgument;
@@ -144,7 +142,7 @@ double d2;
 double d3;
 uint16_t data_to_send;
 uint16_t command;
-int fd;
+//int fd;
 int received_data;
 double dispCommand =0.0;
 double PCommand = .5;
@@ -225,9 +223,15 @@ int controller = 0;
 double hybStiff;
 int continuous = 1;
 bool pinActive = 0;
-int fd2;
 int SerialDisp;
-
+int fd;
+int fd2;
+int serialRead();
+char received[4];
+int numReceived;
+unsigned char sendData[4];
+int crcReceived;
+unsigned char recData[2];
 
 //EDIT THIS FOR NEW HAT
 //int bitmapports;
@@ -257,6 +261,7 @@ void readForce();
 void readDisp();
 static void Call_Integrator();
 int serialRead();
+
 
 
 void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
@@ -393,6 +398,8 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
                 plot_obj->Xdata.append((double) time_in_s1);
 
                 readForce();
+                received_Disp = (((double)serialRead())-2048.0)*2*span/4095.0;//-((ogZero-2048.0)*2*span/4095.0)
+                //received_Disp = 0;
                 //force.push_back(-received_Force);
                 //CommandVec.push_back((double) sinWave[i]);
                 //CommandTime.push_back((double) time_in_s1);
@@ -890,6 +897,13 @@ hsm_full::hsm_full(QWidget *parent) :
     setvbuf (stdout, NULL, _IONBF, 0);
     ui->setupUi(this);
 
+    if((fd=serialOpen("/dev/serial0",2000000))<0){
+      qDebug("Unable to open serial device: %s\n",strerror(errno));
+    }
+    //if((fd2=serialOpen("/dev/serial/by-id/usb-Teensyduino_USB_Serial_10336750-if00",115200))<0){
+    //  qDebug("Unable to open serial device: %s\n",strerror(errno));
+    //}
+
     timer = new QTimer(this);
     connect(timer,&QTimer::timeout,this,&hsm_full::updateLCD);
     timer->start(100);\
@@ -912,12 +926,6 @@ hsm_full::hsm_full(QWidget *parent) :
        }
     }*/
 
-    if((fd=serialOpen("/dev/ttyACM0",2000000))<0){
-      fprintf(stderr,"Unable to open serial device: %s\n",strerror(errno));
-    }
-    if((fd2=serialOpen("/dev/ttyACM1",2000000))<0){
-      fprintf(stderr,"Unable to open serial device: %s\n",strerror(errno));
-    }
 
     qDebug("%d",serialRead());
 
@@ -1344,7 +1352,7 @@ void hsm_full::stiffTest()
                        command = command<<12;
                        data_to_send = round(A+(ogZero-2048));
                        data_to_send = data_to_send | command;
-                       wiringPiI2CWriteReg16(fd,0x00,data_to_send);
+                       //wiringPiI2CWriteReg16(fd,0x00,data_to_send);
                    }else if(microcont ==2){
                        xt.push_back((A-512)*span/512);
                        hsm_full::Ydata2.append((double) (A-512)*span/512);
@@ -1358,7 +1366,7 @@ void hsm_full::stiffTest()
                        command = command<<10;
                        data_to_send = round(A+(ogZero-512));
                        data_to_send = data_to_send | command;
-                       wiringPiI2CWriteReg16(fd,0x00,data_to_send);
+                       //wiringPiI2CWriteReg16(fd,0x00,data_to_send);
                    }
                    else{
                        //DAQ->DACWrite(DAC0,A);
@@ -1385,7 +1393,7 @@ void hsm_full::stiffTest()
                    command = command<<12;
                    data_to_send = round(A+(ogZero-2048));
                    data_to_send = data_to_send | command;
-                   wiringPiI2CWriteReg16(fd,0x00,data_to_send);
+                   //wiringPiI2CWriteReg16(fd,0x00,data_to_send);
                }else if(microcont ==2){
                    xt.push_back((A-512)*span/512);
                    hsm_full::Ydata2.append((double) (A-512)*span/512);
@@ -1399,7 +1407,7 @@ void hsm_full::stiffTest()
                    command = command<<10;
                    data_to_send = round(A+(ogZero-512));
                    data_to_send = data_to_send | command;
-                   wiringPiI2CWriteReg16(fd,0x00,data_to_send);
+                   //wiringPiI2CWriteReg16(fd,0x00,data_to_send);
                }
                else{
                    //DAQ->DACWrite(DAC0,A);
@@ -1426,7 +1434,7 @@ void hsm_full::stiffTest()
                    command = command<<12;
                    data_to_send = round(A+(ogZero-2048));
                    data_to_send = data_to_send | command;
-                   wiringPiI2CWriteReg16(fd,0x00,data_to_send);
+                   //wiringPiI2CWriteReg16(fd,0x00,data_to_send);
                }else if(microcont ==2){
                    xt.push_back((A-512)*span/512);
                    hsm_full::Ydata2.append((double) (A-512)*span/512);
@@ -1440,7 +1448,7 @@ void hsm_full::stiffTest()
                    command = command<<10;
                    data_to_send = round(A+(ogZero-512));
                    data_to_send = data_to_send | command;
-                   wiringPiI2CWriteReg16(fd,0x00,data_to_send);
+                   //wiringPiI2CWriteReg16(fd,0x00,data_to_send);
                }
                else{
                    //DAQ->DACWrite(DAC0,A);
@@ -2190,23 +2198,61 @@ void hsm_full::activatePin(){
 }
 
 int serialRead() {
-    command = 0;
-    command = command<<10;
+    command = 1;
+    command = command<<12;
     data_to_send = 0;
     data_to_send = data_to_send | command;
-    serialFlush(fd);
-      for(int i = 0; i < 2;i++){
-        char bytes[sizeof data_to_send];
-        std::copy(static_cast<const char*>(static_cast<const void*>(&data_to_send)),static_cast<const char*>(static_cast<const void*>(&data_to_send)) + sizeof data_to_send, bytes);
-        serialPuts(fd,"<");
-        serialPuts(fd,bytes);
-        serialPuts(fd,">");
-        char rc;
+    //serialFlush(fd); 
+    sendData[0] = data_to_send >> 8;
+    sendData[1] = data_to_send;
+    uint16_t crcSum = crc_modbus(sendData,2);
+    sendData[2] = crcSum >> 8;
+    sendData[3] = crcSum;
+    serialPutchar(fd,'<');
+    serialPutchar(fd,sendData[0]);
+    serialPutchar(fd,sendData[1]);
+    serialPutchar(fd,sendData[2]);
+    serialPutchar(fd,sendData[3]);
+    serialPutchar(fd,'>');
+    char startMarker = '<';
+    char endMarker = '>';
+    char rc;
+    int maxBytes = 2;
+    int ndx = 0;
+
+    for(int i = 0; i < 4;i++){
+      char rc;
+      rc = serialGetchar(fd);
+      received[i] = rc;
+    }
+    /*for(int i = 0; i < 4; i++) {
         rc = serialGetchar(fd);
-        received[i] = rc;
-      }
-      numReceived = char(received[1])<<8;
-      numReceived |= char(received[0]);
+        //qDebug("test");
+        if (recvInProgress == true) {
+            if(rc != endMarker || (rc == endMarker && ndx < maxBytes)) {
+                received[ndx] = rc;
+                ndx += 1;
+            }
+            else {
+                numReceived = char(received[1])<<8;
+                numReceived |= char(received[0]);
+                numReceived = numReceived & 4095;
+                recvInProgress = false;
+            }
+        }
+        else if (rc == startMarker) {
+            recvInProgress = true;
+            qDebug("Begin");
+        }
+    }*/
+      numReceived = received[1]<<8;
+      numReceived |= received[0];
+      recData[0] = received[1];
+      recData[1] = received[0];
+      numReceived = numReceived & 4095;
+      crcReceived = received[3] << 8;
+      crcReceived |= received[2];
+      //std::cout << (crc_modbus(sendData,2)) << "\n";
       return numReceived;
 }
 

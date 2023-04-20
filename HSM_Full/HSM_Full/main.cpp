@@ -7,7 +7,11 @@
 #include "ui_hsm_full.h"
 //#include "psas.h"
 #include "ui_psas.h"
-
+#include <string.h>
+#include <errno.h>
+#include <string>
+#include <iostream>
+#include <wiringSerial.h>
 
 
 int main(int argc, char *argv[])
@@ -21,3 +25,4 @@ int main(int argc, char *argv[])
 
     return a.exec();
 }
+

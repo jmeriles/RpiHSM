@@ -27,6 +27,7 @@ CONFIG += qwt
 CONFIG += console
 
 SOURCES += \
+        crc.cpp \
         customelement.cpp \
         hybridel.cpp \
         main.cpp \
@@ -77,3 +78,16 @@ INCLUDEPATH += $$PWD/../../../../../usr/include
 DEPENDPATH += $$PWD/../../../../../usr/include
 
 DISTFILES +=
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../libcrc-2.0/lib/release/ -lcrc
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../libcrc-2.0/lib/debug/ -lcrc
+else:unix: LIBS += -L$$PWD/../libcrc-2.0/lib/ -lcrc
+
+INCLUDEPATH += $$PWD/../libcrc-2.0/include
+DEPENDPATH += $$PWD/../libcrc-2.0/include
+
+win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../libcrc-2.0/lib/release/libcrc.a
+else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../libcrc-2.0/lib/debug/libcrc.a
+else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../libcrc-2.0/lib/release/crc.lib
+else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../libcrc-2.0/lib/debug/crc.lib
+else:unix: PRE_TARGETDEPS += $$PWD/../libcrc-2.0/lib/libcrc.a
