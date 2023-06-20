@@ -1118,6 +1118,7 @@ hsm_full::hsm_full(QWidget *parent) :
     connect(ui->ActTwoLowButton,&QPushButton::released,this,&hsm_full::turnOnLow2);
     connect(ui->ActTwoHighButton,&QPushButton::released,this,&hsm_full::turnOnHigh2);
     connect(ui->SecondActBox,&QCheckBox::toggled,this,&hsm_full::useSecondActuator);
+    connect(ui->actionInterlocks, &QAction::triggered,this,&hsm_full::Interlock_Window);
 
     ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,runaxlim);
     ui->qwtPlot->setAxisAutoScale(QwtPlot::yLeft,true);
@@ -2750,4 +2751,9 @@ void eStop() {
     eStopActive = true;
 }
 
+void hsm_full::Interlock_Window(){
+    timer->stop();
+    Interlock *newStructSoft = new Interlock(this);
+    newStructSoft->show();
+}
 

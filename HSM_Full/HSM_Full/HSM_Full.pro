@@ -38,8 +38,7 @@ SOURCES += \
         spancalibration.cpp
 
 HEADERS += \
-        hsm_full.h \
-        interlock.h
+        hsm_full.h
 
 FORMS += \
         customelement.ui \

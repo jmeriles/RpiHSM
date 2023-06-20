@@ -43,6 +43,7 @@ class PSAS;
 class SpanCalibration;
 class HybridEl;
 class CustomElement;
+class Interlock;
 }
 
 class hsm_full : public QMainWindow
@@ -106,6 +107,7 @@ public slots:
     void turnOnHigh2();
     void turnOffHydraulics();
     void useSecondActuator();
+    void Interlock_Window();
 
 signals:
     void sendSignal(int value);
@@ -225,6 +227,25 @@ private:
 
 };
 
+class Interlock : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    explicit Interlock(QWidget *parent = nullptr);
+    ~Interlock();
+    std::function<void()> closeCallbackInter;
+
+protected:
+    inline void closeEvent(QCloseEvent *event) override
+    {
+        if (closeCallbackInter)
+            closeCallbackInter();
+    }
+
+private:
+    Ui::Interlock *ui6;
+};
 
 extern PyObject *u_p, *udot_p, *uddot_p, *f_p, *eq_p, *dt;
 extern PyObject *pythonArgument;
