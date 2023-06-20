@@ -19,11 +19,19 @@ extern "C" {
 #include <iostream>
 #include <wiringSerial.h>
 #include <checksum.h>
+#include<dirent.h>
+#include <sstream>
+#include <fstream>
+#include <vector>
+#include <bitset>
+
 
 //variables for sending and receiving over serial
 int numToSend;
 bool recvInProgress = false;
 
+QTimer *timer;
+QTimer *eStopTimer;
 PyObject *u_p, *udot_p, *uddot_p, *f_p, *eq_p, *dt,*iter;
 PyObject *pythonArgument;
 PyObject *pName, *pName2, *pModule,*pModule2, *pDict, *pFunc,*pFunc2;
@@ -47,6 +55,8 @@ int gcount_lim = 100;
 int intcount =0;
 double prevdisp = 0;
 double ddisp = 0;
+int maxDiffValue;
+int minDiffValue;
 
 bool running = 0;
 int plotcount = 0;
@@ -151,6 +161,7 @@ double DCommand = 0;
 double slideCommand;
 double received_Force;
 double received_Disp;
+double received_Disp2;
 bool sliderActive = 0;
 double Pmax = 5;
 double Imax = .001;
@@ -160,9 +171,11 @@ int controlcount = 0;
 bool commandPlotting = 1;
 int i2ctest;
 double last_recieved;
+double last_recieved2;
 uint16_t hibyte;
 uint16_t lobyte;
 double relative_Disp;
+double relative_Disp2;
 int pcom = 0;
 int pi;
 char *buf;
@@ -202,7 +215,10 @@ std::vector<double> runTime(10000,0);
 std::vector<double> runFeedback(10000,0);
 std::vector<double> stiffnessvec;
 std::vector<double> stiffdispvec;
+std::vector<std::vector<double>> potCalibration;
+std::vector<std::vector<double>> spanCalibration;
 std::vector<int> intIndex = {};
+std::map <double,std::vector<double>> spanCalMap;
 double curloops;
 int force_bits;
 double w=.4;
@@ -224,14 +240,29 @@ double hybStiff;
 int continuous = 1;
 bool pinActive = 0;
 int SerialDisp;
+int SerialDisp2;
 int fd;
 int fd2;
-int serialRead();
-char received[4];
+char received[8];
 int numReceived;
 unsigned char sendData[4];
 int crcReceived;
 unsigned char recData[2];
+double spanSlope;
+double spanIntercept;
+double spanMax;
+bool actOneLow = false;
+bool actOneHigh = false;
+bool actTwoLow = false;
+bool actTwoHigh = false;
+int actOneLowPin = 25;
+int actOneHighPin = 28;
+int actTwoLowPin = 27;
+int actTwoHighPin = 24;
+bool eStopActive;
+bool secondActuatorOn = false;
+double newSpan;
+
 
 //EDIT THIS FOR NEW HAT
 //int bitmapports;
@@ -260,7 +291,7 @@ static void wait_rest_of_period(struct period_info *pinfo);
 void readForce();
 void readDisp();
 static void Call_Integrator();
-int serialRead();
+void eStop();
 
 
 
@@ -398,7 +429,7 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
                 plot_obj->Xdata.append((double) time_in_s1);
 
                 readForce();
-                received_Disp = (((double)serialRead())-2048.0)*2*span/4095.0;//-((ogZero-2048.0)*2*span/4095.0)
+                received_Disp = plot_obj->receivedToInches((double)plot_obj->serialRead(1, 1, 0));
                 //received_Disp = 0;
                 //force.push_back(-received_Force);
                 //CommandVec.push_back((double) sinWave[i]);
@@ -891,20 +922,70 @@ hsm_full::hsm_full(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::hsm_full)
 {
+
+    closeCallbackHsm = [&](){
+        std::cout << "Window was closed" << "\n";
+        eStopActive = true;
+        turnOffHydraulics();
+        if(controller == 1) {
+            startControl();
+        }
+    };
+
+    eStopActive = false;
     wiringPiSetup();			// Setup the library
     pinMode(7, OUTPUT);
-    digitalWrite(0, pinActive);
+    pinMode(actOneHighPin, OUTPUT);
+    pinMode(actOneLowPin, OUTPUT);
+    pinMode(actTwoLowPin, OUTPUT);
+    pinMode(actTwoHighPin, OUTPUT);
+    pinMode(actTwoHighPin, OUTPUT);
+    pinMode(0, OUTPUT);
+    pinMode(2,INPUT);
+    digitalWrite(0, 1);
     setvbuf (stdout, NULL, _IONBF, 0);
     ui->setupUi(this);
 
-    if((fd=serialOpen("/dev/serial0",2000000))<0){
+    if((fd=serialOpen("/dev/ttyAMA0",2000000))<0){
       qDebug("Unable to open serial device: %s\n",strerror(errno));
     }
-    //if((fd2=serialOpen("/dev/serial/by-id/usb-Teensyduino_USB_Serial_10336750-if00",115200))<0){
-    //  qDebug("Unable to open serial device: %s\n",strerror(errno));
-    //}
+    if((fd2=serialOpen("/dev/ttyAMA1",2000000))<0){
+      qDebug("Unable to open serial device: %s\n",strerror(errno));
+    }
+    potCalibration = readCalibrationFiles("potCal.txt");
+    calSlope = potCalibration[0][0];
+    calIntercept = potCalibration[0][1];
+    maxDiffValue = potCalibration[0][2];
+    maxOGValue = potCalibration[0][3];
+    minDiffValue = potCalibration[0][4];
+    minOGValue = potCalibration[0][5];
+    totSpan = potCalibration[0][6];
+    inchSlope = potCalibration[0][7];
+    double newCalSlope = calSlope / totSpan * (maxOGValue - minOGValue);
+    double minDiffInInch = (minDiffValue - calIntercept) / newCalSlope;
 
+    spanCalibration = readCalibrationFiles("AmpCalibration.txt");
+    std::cout << minOGValue << "\n";
+    std::cout << maxOGValue << "\n";
+    for (int i = 0; i < spanCalibration.size(); i++) {
+        std::vector<double> tempData;
+        for (int j = 1; j < spanCalibration[i].size(); j++) {
+            tempData.push_back(spanCalibration[i][j]);
+        }
+        spanSlope = spanCalibration[i][1];
+        spanIntercept = spanCalibration[i][2];
+        tempData.push_back(receivedToInches((spanCalibration[i][3] - ((spanCalibration[i][1] * minDiffValue) + spanCalibration[i][2]))));
+        std::cout << receivedToInches((spanCalibration[i][3] - ((spanCalibration[i][1] * minDiffValue) + spanCalibration[i][2]))) << "\n";
+        spanCalMap.insert({spanCalibration[i][0], tempData});
+        //inches = (dataInBits - spanIntercept - spanZeroPoint) / spanSlope;
+    }
+    serialFlush(fd);
+    serialFlush(fd2);
+    spanCommand(totSpan, 0);
     timer = new QTimer(this);
+    eStopTimer = new QTimer(this);
+    eStopTimer -> start(10);
+    connect(eStopTimer,&QTimer::timeout,this,&hsm_full::turnOffHydraulics);
     connect(timer,&QTimer::timeout,this,&hsm_full::updateLCD);
     timer->start(100);\
     if(logcontrolloops == 1){
@@ -912,6 +993,11 @@ hsm_full::hsm_full(QWidget *parent) :
         connect(timer2,&QTimer::timeout,this,&hsm_full::reqloops);
         timer2->start(1000);
     }
+    ui->Act1LowOn->setText("Off");
+    ui->Act1HighOn->setText("Off");
+    ui->Act2LowOn->setText("Off");
+    ui->Act2HighOn->setText("Off");
+    wiringPiISR(2, INT_EDGE_RISING, &eStop);
     qDebug("Test Starts now!");
     /*if (microcont ==1 or microcont ==2){
        // Setup I2C communication
@@ -927,7 +1013,7 @@ hsm_full::hsm_full(QWidget *parent) :
     }*/
 
 
-    qDebug("%d",serialRead());
+    qDebug("%d",serialRead(1, 1, 0));
 
    gettimeofday(&runtv, NULL);
    runtime_in_mill = runtv.tv_usec;
@@ -1011,7 +1097,7 @@ hsm_full::hsm_full(QWidget *parent) :
     connect(ui->DButton,&QPushButton::released,this,&hsm_full::sendD);
     connect(ui->horizontalSlider,&QSlider::sliderReleased,this,&hsm_full::sliderCommand);
     connect(ui->SliderButton,&QPushButton::released,this,&hsm_full::activateButton);
-    connect(ui->SpanButton,&QPushButton::released,this,&hsm_full::spanCommand);
+    connect(ui->SpanButton,&QPushButton::released,this,&hsm_full::pressSpanButton);
     connect(ui->zeroButton,&QPushButton::released,this,&hsm_full::setZero);
     connect(ui->AmpButton,&QPushButton::released,this,&hsm_full::setAmp);
     connect(ui->FreqButton,&QPushButton::released,this,&hsm_full::setFreq);
@@ -1023,9 +1109,19 @@ hsm_full::hsm_full(QWidget *parent) :
     connect(ui->plotResults,&QPushButton::released,this,&hsm_full::plotResults);
     connect(ui->AmpTestButton,&QPushButton::released,this,&hsm_full::ampTest);
     connect(ui->PinButton,&QPushButton::released,this,&hsm_full::activatePin);
+    connect(ui->actionCalibration, &QAction::triggered,this,&hsm_full::Cal_Window);
+    connect(ui->setZeroBit,&QPushButton::released,this,&hsm_full::sendZero);
+    connect(ui->setSpanBit,&QPushButton::released,this,&hsm_full::changeSpan);
+    connect(ui->sendDoubleButton,&QPushButton::released,this,&hsm_full::sendDoubleUI);
+    connect(ui->ActOneLowButton,&QPushButton::released,this,&hsm_full::turnOnLow1);
+    connect(ui->ActOneHighButton,&QPushButton::released,this,&hsm_full::turnOnHigh1);
+    connect(ui->ActTwoLowButton,&QPushButton::released,this,&hsm_full::turnOnLow2);
+    connect(ui->ActTwoHighButton,&QPushButton::released,this,&hsm_full::turnOnHigh2);
+    connect(ui->SecondActBox,&QCheckBox::toggled,this,&hsm_full::useSecondActuator);
 
     ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,runaxlim);
     ui->qwtPlot->setAxisAutoScale(QwtPlot::yLeft,true);
+    serialWrite(1, 10, 128);
 
 
     while(EQ>>EQdata){
@@ -1277,7 +1373,9 @@ void hsm_full::updatePlot()
 
     QwtPlotCurve *curve1 = new QwtPlotCurve("Curve1");
     QwtPlotCurve *curve2 = new QwtPlotCurve("Curve2");
+    QwtPlotCurve *curve3 = new QwtPlotCurve("Curve3");
     curve1->setPen(QColor(Qt::red));
+    curve3->setPen(QColor(Qt::green));
 
 
     //Xdata.removeFirst();
@@ -1296,6 +1394,10 @@ void hsm_full::updatePlot()
        curve2->attach(ui->qwtPlot);
     }
 
+    if(secondActuatorOn) {
+        curve3->setSamples(XdataAct2,YdataAct2);
+        curve3->attach(ui->qwtPlot);
+    }
     ui->qwtPlot->replot();
 
 
@@ -1638,62 +1740,43 @@ hsm_full::~hsm_full()
 
 
 void hsm_full::sendCommand(){
-    /*setvbuf (stdout, NULL, _IONBF, 0);
+    setvbuf (stdout, NULL, _IONBF, 0);
     dispCommand = ui->CommandInput->value();
-    printf("%f",dispCommand);
-    if (microcont == 1){
-        command = 0;
-        command = command<<12;
-        data_to_send = std::min(4095.0,round((dispCommand+span)*4095.0/(2*span))+(ogZero-2048));
-        data_to_send = data_to_send | command;
-        wiringPiI2CWriteReg16(fd,0x00,data_to_send);
-    }else if (microcont ==2){
-        command = 0;
-        command = command<<10;
-        data_to_send = std::min(1023.0,round((dispCommand+span)*1023.0/(2*span))+(ogZero-512));
-        data_to_send = data_to_send | command;
-        wiringPiI2CWriteReg16(fd,0x00,data_to_send);
-    }else{
-        data_to_send = std::min(3300.0,round((dispCommand+span)*3300.0/(2*span))+(sendZero-1650));
-        //expi.dac_set_raw(data_to_send,2, 2);
-        qDebug("%d",data_to_send);
-    }*/
+    //printf("%f",dispCommand);
+    command = 0;
+    data_to_send = (uint16_t) ((dispCommand + newSpan / 2)  * spanSlope + spanIntercept);
+    std::cout << data_to_send << "\n";
+    serialWrite(1,command,data_to_send);
 }
 
 void hsm_full::sendP(){
-    /*setvbuf (stdout, NULL, _IONBF, 0);
+    setvbuf (stdout, NULL, _IONBF, 0);
     PCommand = ui->PInput->value();
     ui->PDisp->display(PCommand);
     printf("%f",PCommand);
-    command = 1;
-    command = command<<12;
+    command = 2;
     data_to_send = std::min(4095.0,round(PCommand/Pmax*4095));
-    data_to_send = data_to_send | command;
-    wiringPiI2CWriteReg16(fd,0x00,data_to_send);*/
+    serialWrite(1,command,data_to_send);
 }
 
 void hsm_full::sendI(){
-    /*setvbuf (stdout, NULL, _IONBF, 0);
+    setvbuf (stdout, NULL, _IONBF, 0);
     ICommand = ui->IInput->value();
     ui->IDisp->display(ICommand);
     printf("%f",ICommand);
-    command = 2;
-    command = command<<12;
+    command = 3;
     data_to_send = std::min(4095.0,round(ICommand/Imax*4095));
-    data_to_send = data_to_send | command;
-    wiringPiI2CWriteReg16(fd,0x00,data_to_send);*/
+    serialWrite(1,command,data_to_send);
 }
 
 void hsm_full::sendD(){
-    /*setvbuf (stdout, NULL, _IONBF, 0);
+    setvbuf (stdout, NULL, _IONBF, 0);
     DCommand = ui->DInput->value();
     ui->DDisp->display(DCommand);
     printf("%f",DCommand);
-    command = 3;
-    command = command<<12;
+    command = 4;
     data_to_send = std::min(4095.0,round(DCommand/Dmax*4095));
-    data_to_send = data_to_send | command;
-    wiringPiI2CWriteReg16(fd,0x00,data_to_send);*/
+    serialWrite(1,command,data_to_send);
 }
 
 void hsm_full::sliderCommand(){
@@ -1728,9 +1811,14 @@ void hsm_full::activateButton(){
 
 void hsm_full::updateLCD(){
 
-    SerialDisp = serialRead();
+    SerialDisp = serialRead(1, 1, 0);
     //SerialDisp = 0;
-    received_Disp = (((double)SerialDisp)-2048)*2*span/4095.0;
+    received_Disp = receivedToInches(SerialDisp);
+
+    if(secondActuatorOn) {
+        SerialDisp2 = serialRead(2,1,0);
+        received_Disp2 = receivedToInches(SerialDisp2);
+    }
 
 
 
@@ -1805,15 +1893,29 @@ void hsm_full::updateLCD(){
 
     if (sinOn ==0) {
         hsm_full::Xdata.append((double) runtime_in_s);
-        if ((received_Disp<span) && (received_Disp>-span)){
+        if ((received_Disp<totSpan) && (received_Disp>-totSpan)){
             relative_Disp = received_Disp-zeroPoint_in;
-            hsm_full::Ydata.append((double) relative_Disp);
+            hsm_full::Ydata.append((double) received_Disp);
             last_recieved = received_Disp;
 
         }
         else{
             relative_Disp = last_recieved-zeroPoint_in;
             hsm_full::Ydata.append((double) relative_Disp);
+        }
+
+        if (secondActuatorOn) {
+            hsm_full::XdataAct2.append((double) runtime_in_s);
+            if ((received_Disp2<totSpan) && (received_Disp2>-totSpan)){
+                relative_Disp2 = received_Disp2-zeroPoint_in;
+                hsm_full::YdataAct2.append((double) relative_Disp2);
+                last_recieved2 = received_Disp2;
+
+            }
+            else{
+                relative_Disp2 = last_recieved2-zeroPoint_in;
+                hsm_full::Ydata.append((double) relative_Disp2);
+            }
         }
         runFeedback.erase(runFeedback.begin());
         runFeedback.push_back(relative_Disp);
@@ -1826,7 +1928,47 @@ void hsm_full::updateLCD(){
 
 }
 
-void hsm_full::spanCommand(){
+void hsm_full::pressSpanButton() {
+    double targetSpan = ui -> SpanInput -> value();
+    double targetZero = ui -> approxZero -> value();
+    spanCommand(targetSpan, targetZero);
+}
+void hsm_full::spanCommand(double targetSpan, double targetZero){
+    double ampedSpan = 100000000;
+    int ampValue = 128;
+    int zeroBit;
+    std::cout << (totSpan) << "\n";
+    std::map<double,std::vector<double>>::iterator mapIter;
+    for (mapIter = spanCalMap.begin(); mapIter != spanCalMap.end(); mapIter ++) {
+        if (mapIter->second[4] > targetSpan && mapIter->second[4] < ampedSpan) {
+            ampedSpan = mapIter -> second[4];
+            ampValue = mapIter -> first;
+        }
+    }
+    if (ampedSpan == 100000000) {
+        ampedSpan = spanCalMap.begin() -> second[4];
+        ampValue = spanCalMap.begin() -> first;
+    }
+    targetZero = targetZero - ampedSpan / 2 + totSpan / 2;
+    zeroBit = (targetZero * maxOGValue) / totSpan;
+    if (zeroBit < 0) {
+        zeroBit = 0;
+    }
+    serialWrite(1, 14, zeroBit);
+    //std::cout << "zeroBit: " << zeroBit << "\n";
+    //std::cout <<"Span: " << ampedSpan << "   ampValue: " << ampValue << "\n";
+    serialWrite(1 ,10 , ampValue);
+    spanSlope = spanCalMap[ampValue][0];
+    spanIntercept = spanCalMap[ampValue][1];
+    spanMax = spanCalMap[ampValue][2];
+    newSpan = ampedSpan;
+    std::cout << (ampValue) << "\n";
+    std::cout << "new Span: " << ampedSpan << "\n";
+    sendDouble(1, spanSlope);
+    sendDouble(1, spanIntercept);
+    sendDouble(1, spanMax);
+    sendDouble(1, newSpan);
+
     /*span = ui->SpanInput->value();
     ui->CurSpan->display(span);
     command = 4;
@@ -1945,23 +2087,25 @@ void hsm_full::reqloops(){
 }
 
 void hsm_full::startControl(){
-    /*if (controller == 0){
+    if (controller == 0){
         ui->StartControl->setText("Stop Controller");
         controller = 1;
     }else{
         ui->StartControl->setText("Start Controller");
     }
-    command = 8;
-    command = command<<12;
-    data_to_send = 0;
-    data_to_send = data_to_send | command;
-    wiringPiI2CWriteReg16(fd,0x00,data_to_send);*/
+    serialWrite(1,9,0);
 }
 
 
 void hsm_full::PSAS_Window(){
     PSAS *StructSoft = new PSAS();
     StructSoft->show();
+}
+
+void hsm_full::Cal_Window(){
+    timer->stop();
+    SpanCalibration *newStructSoft = new SpanCalibration(this);
+    newStructSoft->show();
 }
 
 void hsm_full::sinTest(){
@@ -2197,33 +2341,48 @@ void hsm_full::activatePin(){
     }
 }
 
-int serialRead() {
-    command = 1;
+int hsm_full::serialRead(int channel, int comm, int data) {
+    int sendChan;
+    std::vector<double> returnList;
+    command = comm;
     command = command<<12;
-    data_to_send = 0;
+    if (channel == 1) {
+        sendChan = fd;
+    } else if (channel == 2) {
+        sendChan = fd2;
+    } else {
+        sendChan = fd;
+    }
+    data_to_send = data;
     data_to_send = data_to_send | command;
-    //serialFlush(fd); 
+    //serial(fd);
     sendData[0] = data_to_send >> 8;
     sendData[1] = data_to_send;
     uint16_t crcSum = crc_modbus(sendData,2);
     sendData[2] = crcSum >> 8;
     sendData[3] = crcSum;
-    serialPutchar(fd,'<');
-    serialPutchar(fd,sendData[0]);
-    serialPutchar(fd,sendData[1]);
-    serialPutchar(fd,sendData[2]);
-    serialPutchar(fd,sendData[3]);
-    serialPutchar(fd,'>');
+    serialPutchar(sendChan,'<');
+    serialPutchar(sendChan,sendData[0]);
+    serialPutchar(sendChan,sendData[1]);
+    serialPutchar(sendChan,sendData[2]);
+    serialPutchar(sendChan,sendData[3]);
+    serialPutchar(sendChan,'>');
     char startMarker = '<';
     char endMarker = '>';
     char rc;
     int maxBytes = 2;
     int ndx = 0;
-
-    for(int i = 0; i < 4;i++){
+    int numReads = 4;
+    /*if (comm == 11) {
+        numReads = 8;
+    }*/
+    for(int i = 0; i < numReads;i++){
       char rc;
-      rc = serialGetchar(fd);
+      rc = serialGetchar(sendChan);
       received[i] = rc;
+      /*if (comm == 11) {
+        std::cout << i << "\n";
+      }*/
     }
     /*for(int i = 0; i < 4; i++) {
         rc = serialGetchar(fd);
@@ -2250,9 +2409,345 @@ int serialRead() {
       recData[0] = received[1];
       recData[1] = received[0];
       numReceived = numReceived & 4095;
+      returnList.push_back(numReceived);
+      /*if (comm == 11) {
+          numReceived = received[5]<<8;
+          numReceived |= received[4];
+          numReceived = numReceived & 4095;
+          returnList.push_back(numReceived);
+          std::cout << returnList[0] << "\n" << returnList[1] << "\n";
+      }*/
+      /*if (comm == 11) {
+        std::cout << returnList[0] << "\n";
+      }*/
+      numReceived = received[1]<<8;
+      numReceived |= received[0];
       crcReceived = received[3] << 8;
       crcReceived |= received[2];
       //std::cout << (crc_modbus(sendData,2)) << "\n";
       return numReceived;
 }
+
+void hsm_full::serialWrite(int channel, int comm, int data) {
+    int sendChan;
+    command = comm;
+    command = command<<12;
+    if (channel == 1) {
+        sendChan = fd;
+    } else if (channel == 2) {
+        sendChan = fd2;
+    } else {
+        sendChan = fd;
+    }
+    data_to_send = data;
+    data_to_send = data_to_send | command;
+    //serialFlush(fd);
+    sendData[0] = data_to_send >> 8;
+    sendData[1] = data_to_send;
+    int test = data_to_send & 255;
+    uint16_t crcSum = crc_modbus(sendData,2);
+    //std::cout << test << "\n";
+    sendData[2] = crcSum >> 8;
+    sendData[3] = crcSum;
+    serialPutchar(sendChan,'<');
+    serialPutchar(sendChan,sendData[0]);
+    serialPutchar(sendChan,sendData[1]);
+    serialPutchar(sendChan,sendData[2]);
+    serialPutchar(sendChan,sendData[3]);
+    serialPutchar(sendChan,'>');
+}
+
+void hsm_full::sendDouble(int channel, double data) {
+    int sendChan;
+    command = 15;
+    union myUnion {
+        double dValue;
+        uint64_t iValue;
+    };
+
+    myUnion myValue;
+    myValue.dValue=data;
+    std::cout << myValue.iValue << "\n";
+    std::bitset<64> x(myValue.iValue);
+    std::cout << x << "\n";
+    int double1 = myValue.iValue >> 56 & 255;
+    int double2 = myValue.iValue >> 48 & 255;
+    int double3 = myValue.iValue >> 40 & 255;
+    int double4 = myValue.iValue >> 32 & 255;
+    int double5 = myValue.iValue >> 24 & 255;
+    int double6 = myValue.iValue >> 16 & 255;
+    int double7 = myValue.iValue >> 8 & 255;
+    int double8 = myValue.iValue & 255;
+    serialWrite(channel,15,double1);
+    serialWrite(channel,15,double2);
+    serialWrite(channel,15,double3);
+    serialWrite(channel,15,double4);
+    serialWrite(channel,15,double5);
+    serialWrite(channel,15,double6);
+    serialWrite(channel,15,double7);
+    serialWrite(channel,15,double8);
+}
+
+std::vector <std::vector <double>>  hsm_full::readCalibrationFiles(std::string fileName){
+    DIR *directory;
+    std::vector <std::vector <double>> returnVector;
+    struct dirent *x;
+    std::string *Data;
+    bool result = FALSE;
+    if ((directory = opendir("/home/jim53/Desktop/HSM_Full/")) != NULL){
+        while((x=readdir(directory))!=NULL){
+            if(fileName==x->d_name){
+                    printf("attempt");
+                    result=true;  //if file found then  assign  result to false.
+                        break;     // break the loop if file found.
+        }
+    }
+    closedir(directory);
+    if(result)   // if file is present then....
+      {
+        std::cout << "Pot calibration file is present" << "\n";
+        std::string calDir = "/home/jim53/Desktop/HSM_Full/";
+        for(int i = 0; i <= (int)fileName.size(); i++)
+            {
+                calDir.push_back(fileName.c_str()[i]);
+            }
+
+        std::ifstream fileName(calDir.c_str());
+        if (fileName.is_open()) {
+            std::vector<float> dataRow;
+            std::string line, data;
+            int lineCount = 0;
+            while(getline(fileName, line)){
+                std::stringstream str(line);
+                returnVector.push_back({});
+                while(getline(str, data, ',')){
+                     dataRow.push_back(std::stof(data));
+                }
+                for (int i = 0; i < dataRow.size(); i ++) {
+                    returnVector[lineCount].push_back(dataRow[i]);
+                }
+                dataRow.clear();
+                lineCount += 1;
+            }
+        }
+        return returnVector;
+      }
+      else    //if file is not present....
+      {
+        std::cout << "Cal file is was not found" << "\n";
+        returnVector = {{-1}};
+      }
+
+}else{
+        returnVector = {{-1}};
+        printf("Directory Not Found");
+    }
+return returnVector;
+}
+
+std::vector <double> hsm_full::LinearRegression(std::vector <double> xData, std::vector<double> yData) {
+    double sumX = 0;
+    double sumX2 = 0;
+    double sumY = 0;
+    double sumXY = 0;
+    double n = xData.size();
+    double slope;
+    double intercept;
+    std::vector <double> returnVec;
+    for (int i=0;i<n;i++){
+        sumX = sumX + xData[i];
+        sumX2 = sumX2 + xData[i]*xData[i];
+        sumY = sumY+yData[i];
+        sumXY = sumXY + xData[i]*yData[i];
+    }
+    slope = ((double)n*sumXY-sumX*sumY)/((double)n*sumX2-sumX*sumX);
+    intercept = (sumY - slope * sumX) / n;
+    returnVec.push_back(slope);
+    returnVec.push_back(intercept);
+    return returnVec;
+}
+
+void hsm_full::sendZero() {
+    int zeroToSend = ui->zeroBitInput->value();
+    ui->zeroBitDisp->display(zeroToSend);
+    serialWrite(1,14,zeroToSend);
+}
+
+void hsm_full::changeSpan() {
+    int spanToSend = ui->SpanBitInput->value();
+    ui->spanBitDisp->display(spanToSend);
+    serialWrite(1,10,spanToSend);
+}
+
+void hsm_full::sendDoubleUI() {
+    double doubleToSend= ui->sendDouble->value();
+    sendDouble(1,doubleToSend);
+}
+
+double hsm_full::receivedToInches(int dataInBits) {
+    double inches;
+    double spanZeroPoint;
+    //std::cout << dataInBits << "\n";
+    /*if (spanIntercept > 0) {
+        spanZeroPoint = (spanMax - spanIntercept) / 2;
+    } else {
+        spanZeroPoint = (spanMax - 0) / 2;
+    }
+    // Conversion from bits to inches using calibration factors. This uses slopes and intercepts from calibration.
+    // Also shifts data to a +- span / 2 range rather than 0 to span;
+
+    //When you get close to the intercept accuracy drops significantly. This makes sure it doesn't read incorrectly
+    if (dataInBits < spanIntercept) {
+        dataInBits = spanIntercept;
+    }*/
+
+    inches = dataInBits * 1/inchSlope;//((((dataInBits - spanIntercept) / spanSlope) - calIntercept) / calSlope * (1 / inchSlope)) / 1.057;
+    //std::cout << dataInBits << "\n";
+    return inches;
+}
+
+void hsm_full::turnOnLow1() {
+    if (actOneLow){
+        actOneLow = 0;
+        digitalWrite(actOneLowPin, actOneLow);
+        ui->Act1LowOn->setText("Off");
+        if (actOneHigh) {
+            actOneHigh = 0;
+            ui->Act1HighOn->setText("Off");
+            digitalWrite(actOneHighPin, actOneHigh);
+        }
+    }else{
+        actOneLow = 1;
+        ui->Act1LowOn->setText("On");
+        digitalWrite(actOneLowPin, actOneLow);
+    }
+}
+
+void hsm_full::turnOnHigh1() {
+    if (actOneLow){
+        if (actOneHigh){
+            actOneHigh = 0;
+            ui->Act1HighOn->setText("Off");
+            digitalWrite(actOneHighPin, actOneHigh);
+        }else{
+            actOneHigh = 1;
+            ui->Act1HighOn->setText("On");
+            digitalWrite(actOneHighPin, actOneHigh);
+        }
+    }
+}
+
+void hsm_full::turnOnLow2() {
+    if (actTwoLow){
+        actTwoLow = 0;
+        ui->Act2LowOn->setText("Off");
+        digitalWrite(actTwoLowPin, actTwoLow);
+        if (actTwoHigh) {
+            actTwoHigh = 0;
+            ui->Act1HighOn->setText("Off");
+            digitalWrite(actTwoHighPin, actTwoHigh);
+        }
+    }else{
+        actTwoLow = 1;
+        ui->Act2LowOn->setText("On");
+        digitalWrite(actTwoLowPin, actTwoLow);
+    }
+}
+
+void hsm_full::turnOnHigh2() {
+    if (actTwoLow){
+        if (actTwoHigh){
+            actTwoHigh = 0;
+            ui->Act2HighOn->setText("Off");
+            digitalWrite(actTwoHighPin, actTwoHigh);
+        }else{
+            actTwoHigh = 1;
+            ui->Act2HighOn->setText("On");
+            digitalWrite(actTwoHighPin, actTwoHigh);
+        }
+    }
+}
+
+void hsm_full::turnOffHydraulics() {
+    if (eStopActive) {
+        if (actOneHigh) {
+            turnOnHigh1();
+        }
+        if (actOneLow) {
+            turnOnLow1();
+        }
+        if (actTwoHigh) {
+            turnOnHigh2();
+        }
+        if (actTwoLow) {
+            turnOnLow2();
+        }
+    }
+}
+
+void hsm_full::useSecondActuator() {
+    if (secondActuatorOn) {
+        secondActuatorOn = false;
+        ui->Act2HighOn->setEnabled(false);
+        ui->Act2LowOn->setEnabled(false);
+        ui->ActTwoHighButton->setEnabled(false);
+        ui->ActTwoLowButton->setEnabled(false);
+        ui->Force_2->setEnabled(false);
+        ui->SpanButton_2->setEnabled(false);
+        ui->CommandButton_2->setEnabled(false);
+        ui->CommandInput_2->setEnabled(false);
+        ui->CommandNum_2->setEnabled(false);
+        ui->CurPos_2->setEnabled(false);
+        ui->CurSpan_2->setEnabled(false);
+        ui->SliderButton_2->setEnabled(false);
+        ui->SpanInput_2->setEnabled(false);
+        ui->Offset_2->setEnabled(false);
+        ui->zeroButton_2->setEnabled(false);
+        ui->Stiffness_2->setEnabled(false);
+        ui->fZeroButton_2->setEnabled(false);
+        ui->horizontalSlider_2->setEnabled(false);
+        ui->Stiffness_2->setEnabled(false);
+        ui->label_11->setEnabled(false);
+        ui->label_12->setEnabled(false);
+        ui->label_13->setEnabled(false);
+        ui->label_14->setEnabled(false);
+        ui->label_15->setEnabled(false);
+        ui->label_16->setEnabled(false);
+        ui->label_17->setEnabled(false);
+    } else {
+        secondActuatorOn = true;
+        ui->Act2HighOn->setEnabled(true);
+        ui->Act2LowOn->setEnabled(true);
+        ui->ActTwoHighButton->setEnabled(true);
+        ui->ActTwoLowButton->setEnabled(true);
+        ui->Force_2->setEnabled(true);
+        ui->SpanButton_2->setEnabled(true);
+        ui->CommandButton_2->setEnabled(true);
+        ui->CommandInput_2->setEnabled(true);
+        ui->CommandNum_2->setEnabled(true);
+        ui->CurPos_2->setEnabled(true);
+        ui->CurSpan_2->setEnabled(true);
+        ui->SliderButton_2->setEnabled(true);
+        ui->SpanInput_2->setEnabled(true);
+        ui->Offset_2->setEnabled(true);
+        ui->zeroButton_2->setEnabled(true);
+        ui->Stiffness_2->setEnabled(true);
+        ui->fZeroButton_2->setEnabled(true);
+        ui->horizontalSlider_2->setEnabled(true);
+        ui->Stiffness_2->setEnabled(true);
+        ui->label_11->setEnabled(true);
+        ui->label_12->setEnabled(true);
+        ui->label_13->setEnabled(true);
+        ui->label_14->setEnabled(true);
+        ui->label_15->setEnabled(true);
+        ui->label_16->setEnabled(true);
+        ui->label_17->setEnabled(true);
+    }
+}
+
+void eStop() {
+    //std::cout << "eStop Activated" << "\n";
+    eStopActive = true;
+}
+
 

@@ -30,19 +30,24 @@ SOURCES += \
         crc.cpp \
         customelement.cpp \
         hybridel.cpp \
+        interlock.cpp \
         main.cpp \
         hsm_full.cpp\
         ABE_ExpanderPi.cpp \
-        psas.cpp
+        psas.cpp \
+        spancalibration.cpp
 
 HEADERS += \
-        hsm_full.h
+        hsm_full.h \
+        interlock.h
 
 FORMS += \
         customelement.ui \
         hsm_full.ui \
         hybridel.ui \
-        psas.ui
+        interlock.ui \
+        psas.ui \
+        spancalibration.ui
 
 INCLUDEPATH += \
         /home/pi/Desktop/HSM \
@@ -91,3 +96,10 @@ else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../libcrc-2
 else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../libcrc-2.0/lib/release/crc.lib
 else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../libcrc-2.0/lib/debug/crc.lib
 else:unix: PRE_TARGETDEPS += $$PWD/../libcrc-2.0/lib/libcrc.a
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../../../usr/local/qwt-6.2.0/lib/release/ -lqwt
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../../../usr/local/qwt-6.2.0/lib/debug/ -lqwt
+else:unix: LIBS += -L$$PWD/../../../../../../usr/local/qwt-6.2.0/lib/ -lqwt
+
+INCLUDEPATH += $$PWD/../../../../../../usr/local/qwt-6.2.0/include
+DEPENDPATH += $$PWD/../../../../../../usr/local/qwt-6.2.0/include

@@ -33,11 +33,14 @@ extern "C" {
 //#include "qwt_plot_dict.h"
 #include <pigpio.h>
 #include <QWidget>
+#include <QtGui/QCloseEvent>
+#include <functional>
 
 
 namespace Ui {
 class hsm_full;
 class PSAS;
+class SpanCalibration;
 class HybridEl;
 class CustomElement;
 }
@@ -50,14 +53,15 @@ public:
     explicit hsm_full(QWidget *parent = nullptr);
     ~hsm_full();
 
-
-    QTimer *timer;
+    std::function<void()> closeCallbackHsm;
     QTimer *timer2;
     int index;
     QVector<double> Xdata;
     QVector<double> Ydata;
     QVector<double> Xdata2;
     QVector<double> Ydata2;
+    QVector<double> XdataAct2;
+    QVector<double> YdataAct2;
     //QwtPlotDict plotdict;
     Ui::hsm_full *ui;
 
@@ -72,7 +76,7 @@ public slots:
     void sliderCommand();
     void activateButton();
     void updateLCD();
-    void spanCommand();
+    void spanCommand(double targetSpan, double targetZero);
     void setZero();
     void startControl();
     void setAmp();
@@ -83,10 +87,25 @@ public slots:
     void reqloops();
     void calForce();
     void PSAS_Window();
+    void Cal_Window();
     void activatePin();
     int plotResults();
-
-
+    int serialRead(int channel, int comm, int data);
+    void serialWrite(int channel, int comm, int data);
+    std::vector <std::vector <double>>  readCalibrationFiles(std::string fileName);
+    std::vector <double> LinearRegression(std::vector <double> xData, std::vector<double> yData);
+    void sendZero();
+    void changeSpan();
+    void sendDouble(int channel, double data);
+    void sendDoubleUI();
+    double receivedToInches(int dataInBits);
+    void pressSpanButton();
+    void turnOnLow1();
+    void turnOnLow2();
+    void turnOnHigh1();
+    void turnOnHigh2();
+    void turnOffHydraulics();
+    void useSecondActuator();
 
 signals:
     void sendSignal(int value);
@@ -100,6 +119,13 @@ private:
 
 private slots:
     int update();
+
+protected:
+    inline void closeEvent(QCloseEvent *event) override
+    {
+        if (closeCallbackHsm)
+            closeCallbackHsm();
+    }
 
 };
 
@@ -129,6 +155,8 @@ public slots:
     int submitDynOpt();
     void enableCustom();
     void CustomEl_Window();
+
+
 
 private:
     Ui::PSAS *ui2;
@@ -168,6 +196,34 @@ private:
 };
 
 
+class SpanCalibration : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    explicit SpanCalibration(QMainWindow *parent = nullptr, hsm_full *source = nullptr);
+    ~SpanCalibration();
+    std::function<void()> closeCallback;
+
+public slots:
+    void startCalibration();
+    void plotCal(QVector<double> X, QVector<double> Y);
+    void potCal();
+    void setTotSpan();
+    void activatePotCal();
+    double BitToInch(int bitVal);
+
+protected:
+    inline void closeEvent(QCloseEvent *event) override
+    {
+        if (closeCallback)
+            closeCallback();
+    }
+
+private:
+    Ui::SpanCalibration *ui5;
+
+};
 
 
 extern PyObject *u_p, *udot_p, *uddot_p, *f_p, *eq_p, *dt;
@@ -175,12 +231,25 @@ extern PyObject *pythonArgument;
 extern PyObject *pName, *pModule, *pDict, *pFunc,*Model,*el;
 extern PyObject *pArgs, *x_next,*PyGM;
 extern int twodthreed;
+extern QTimer *timer;
 
 extern std::vector<std::vector<std::vector<double>>> HybridElMatrix;
 extern std::vector<std::vector<int>> HybridElControl;
 extern std::vector<std::vector<std::vector<double>>> CustomElMatrix;
 extern std::vector<double> GM;
-
+extern double calSlope;
+extern double calIntercept;
+extern double totSpan;
+extern int maxDiffValue;
+extern int minDiffValue;
+extern int maxOGValue;
+extern int minOGValue;
+extern double spanSlope;
+extern double spanIntercept;
+extern double spanMax;
+extern double spanMin;
+extern bool eStopActive;
+extern double inchSlope;
 
 
 

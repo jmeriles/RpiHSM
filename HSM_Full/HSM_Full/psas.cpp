@@ -10,8 +10,6 @@
 std::string GMname;
 std::ifstream GMlocation;
 
-
-
 std::vector<std::vector<double> > NODE;
 std::vector<std::vector<int> > CON;
 std::vector<std::vector<double> > el_prop;
