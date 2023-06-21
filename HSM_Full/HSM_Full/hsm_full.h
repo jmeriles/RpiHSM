@@ -100,6 +100,7 @@ public slots:
     void sendDouble(int channel, double data);
     void sendDoubleUI();
     double receivedToInches(int dataInBits);
+    int inchesToBits(int dataInInches);
     void pressSpanButton();
     void turnOnLow1();
     void turnOnLow2();
@@ -271,7 +272,13 @@ extern double spanMax;
 extern double spanMin;
 extern bool eStopActive;
 extern double inchSlope;
-
+extern std::vector <double> potInches;
+extern std::vector <double> potTru;
+extern std::vector <double> potDiff;
+extern std::vector <double> origSlopes;
+extern std::vector <double> origIntercepts;
+extern std::vector <double> zeroData;
+extern double diffGain;
 
 
 

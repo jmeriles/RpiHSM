@@ -219,6 +219,7 @@ std::vector<std::vector<double>> potCalibration;
 std::vector<std::vector<double>> spanCalibration;
 std::vector<int> intIndex = {};
 std::map <double,std::vector<double>> spanCalMap;
+std::vector <std::vector<double>> zeroMap;
 double curloops;
 int force_bits;
 double w=.4;
@@ -262,6 +263,7 @@ int actTwoHighPin = 24;
 bool eStopActive;
 bool secondActuatorOn = false;
 double newSpan;
+double zeroVol;
 
 
 //EDIT THIS FOR NEW HAT
@@ -952,20 +954,32 @@ hsm_full::hsm_full(QWidget *parent) :
     if((fd2=serialOpen("/dev/ttyAMA1",2000000))<0){
       qDebug("Unable to open serial device: %s\n",strerror(errno));
     }
-    potCalibration = readCalibrationFiles("potCal.txt");
-    calSlope = potCalibration[0][0];
-    calIntercept = potCalibration[0][1];
-    maxDiffValue = potCalibration[0][2];
-    maxOGValue = potCalibration[0][3];
-    minDiffValue = potCalibration[0][4];
-    minOGValue = potCalibration[0][5];
-    totSpan = potCalibration[0][6];
-    inchSlope = potCalibration[0][7];
-    double newCalSlope = calSlope / totSpan * (maxOGValue - minOGValue);
-    double minDiffInInch = (minDiffValue - calIntercept) / newCalSlope;
+    potCalibration = readCalibrationFiles("PotCalibrationAll.txt");
+    for (int i = 0; i < potCalibration.size(); i++) {
+        potTru.push_back(potCalibration[i][0]);
+        potInches.push_back(potCalibration[i][1]);
+    }
+    for (int i = 0; i < potCalibration.size() - 1; i ++) {
+        origSlopes.push_back((potTru[i + 1] - potTru[i]) / (potInches[i + 1] - potInches[i]));
+        origIntercepts.push_back(potTru[i] - origSlopes[i] * potInches[i]);
+        std::cout << "Slope: " << origSlopes[i] << "    " << "Intercept: " << origIntercepts[i] << "\n";
+    }
+    diffGain = potCalibration[10][0];
+    totSpan = potCalibration[10][1];
+    totSpan = 11;
+    std::cout << "Diff Gain" << diffGain << "\n";
+    //calSlope = potCalibration[0][0];
+    //calIntercept = potCalibration[0][1];
+    //maxDiffValue = potCalibration[0][2];
+    //maxOGValue = potCalibration[0][3];
+    minDiffValue = 0;
+    //minOGValue = potCalibration[0][5];
+    //inchSlope = potCalibration[0][7];
+    //double newCalSlope = calSlope / totSpan * (maxOGValue - minOGValue);
+    //double minDiffInInch = (minDiffValue - calIntercept) / newCalSlope;
 
     spanCalibration = readCalibrationFiles("AmpCalibration.txt");
-    std::cout << minOGValue << "\n";
+    std::cout << "Hello " << minOGValue << "\n";
     std::cout << maxOGValue << "\n";
     for (int i = 0; i < spanCalibration.size(); i++) {
         std::vector<double> tempData;
@@ -974,14 +988,25 @@ hsm_full::hsm_full(QWidget *parent) :
         }
         spanSlope = spanCalibration[i][1];
         spanIntercept = spanCalibration[i][2];
-        tempData.push_back(receivedToInches((spanCalibration[i][3] - ((spanCalibration[i][1] * minDiffValue) + spanCalibration[i][2]))));
-        std::cout << receivedToInches((spanCalibration[i][3] - ((spanCalibration[i][1] * minDiffValue) + spanCalibration[i][2]))) << "\n";
+        std::cout << "SpanTest: "<< spanCalibration[i][3] << "\n";
+        double spanInch = receivedToInches(spanCalibration[i][3]);
+        tempData.push_back(spanInch);
+        std::cout << "Span: "<< spanInch << "\n";
         spanCalMap.insert({spanCalibration[i][0], tempData});
         //inches = (dataInBits - spanIntercept - spanZeroPoint) / spanSlope;
     }
+
+    std::vector<std::vector<double>> zeroData = readCalibrationFiles("PotZeroVals.txt");
+    for (int i = 0; i < zeroData.size(); i ++) {
+        zeroMap.push_back(std::vector <double> ());
+        zeroMap[i].push_back(i);
+        zeroMap[i].push_back(zeroData[i][1]);
+    }
+    zeroVol = zeroMap[0][1];
     serialFlush(fd);
     serialFlush(fd2);
-    spanCommand(totSpan, 0);
+
+    spanCommand(totSpan, totSpan / 2);
     timer = new QTimer(this);
     eStopTimer = new QTimer(this);
     eStopTimer -> start(10);
@@ -1122,7 +1147,7 @@ hsm_full::hsm_full(QWidget *parent) :
 
     ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,runaxlim);
     ui->qwtPlot->setAxisAutoScale(QwtPlot::yLeft,true);
-    serialWrite(1, 10, 128);
+    //serialWrite(1, 10, 128);
 
 
     while(EQ>>EQdata){
@@ -1815,6 +1840,7 @@ void hsm_full::updateLCD(){
     SerialDisp = serialRead(1, 1, 0);
     //SerialDisp = 0;
     received_Disp = receivedToInches(SerialDisp);
+    //std::cout << received_Disp << "\n";
 
     if(secondActuatorOn) {
         SerialDisp2 = serialRead(2,1,0);
@@ -1894,16 +1920,16 @@ void hsm_full::updateLCD(){
 
     if (sinOn ==0) {
         hsm_full::Xdata.append((double) runtime_in_s);
-        if ((received_Disp<totSpan) && (received_Disp>-totSpan)){
+        //if ((received_Disp<totSpan) && (received_Disp>-totSpan)){
             relative_Disp = received_Disp-zeroPoint_in;
             hsm_full::Ydata.append((double) received_Disp);
             last_recieved = received_Disp;
 
-        }
-        else{
+       // }
+        /*else{
             relative_Disp = last_recieved-zeroPoint_in;
             hsm_full::Ydata.append((double) relative_Disp);
-        }
+        }*/
 
         if (secondActuatorOn) {
             hsm_full::XdataAct2.append((double) runtime_in_s);
@@ -1940,23 +1966,42 @@ void hsm_full::spanCommand(double targetSpan, double targetZero){
     int zeroBit;
     std::cout << (totSpan) << "\n";
     std::map<double,std::vector<double>>::iterator mapIter;
+    int ampPrecision = 0;
     for (mapIter = spanCalMap.begin(); mapIter != spanCalMap.end(); mapIter ++) {
-        if (mapIter->second[4] > targetSpan && mapIter->second[4] < ampedSpan) {
-            ampedSpan = mapIter -> second[4];
-            ampValue = mapIter -> first;
+        std::cout << "Amped Precision: " << mapIter->second[4] << "\n";
+        if (mapIter->second[4] >= targetSpan && mapIter->second[4] < ampedSpan) {
+            //if(mapIter->second[2] >ampPrecision){
+                //ampPrecision = mapIter->second[2];
+                ampedSpan = mapIter -> second[4];
+                ampValue = mapIter -> first;
+            //}
         }
     }
     if (ampedSpan == 100000000) {
         ampedSpan = spanCalMap.begin() -> second[4];
         ampValue = spanCalMap.begin() -> first;
     }
-    targetZero = targetZero - ampedSpan / 2 + totSpan / 2;
-    zeroBit = (targetZero * maxOGValue) / totSpan;
-    if (zeroBit < 0) {
-        zeroBit = 0;
+    std::cout << "Amped Value: " << ampValue << "\n";
+    targetZero = targetZero - ampedSpan / 2;
+    std::cout << "target zero: " << targetZero << "\n";
+    zeroBit = inchesToBits(targetZero);
+    std::cout << "Bit zero: " << zeroBit << "\n";
+    int sendZero;
+    for (int i = 0; i < zeroMap.size(); i++) {
+        if (abs(zeroMap[i][1] - zeroBit) < 5) {
+            sendZero = round(zeroMap[i][0]);
+            zeroVol = zeroMap[i][1];
+        }
     }
-    serialWrite(1, 14, zeroBit);
-    //std::cout << "zeroBit: " << zeroBit << "\n";
+    if (zeroVol < 0) {
+        zeroVol = 0;
+    }
+
+
+    sendZero = 0;
+    zeroVol = 0;
+    serialWrite(1, 14, sendZero);
+    std::cout << "Send Zero: " << sendZero << "\n";
     //std::cout <<"Span: " << ampedSpan << "   ampValue: " << ampValue << "\n";
     serialWrite(1 ,10 , ampValue);
     spanSlope = spanCalMap[ampValue][0];
@@ -1967,8 +2012,13 @@ void hsm_full::spanCommand(double targetSpan, double targetZero){
     std::cout << "new Span: " << ampedSpan << "\n";
     sendDouble(1, spanSlope);
     sendDouble(1, spanIntercept);
-    sendDouble(1, spanMax);
-    sendDouble(1, newSpan);
+    sendDouble(1, diffGain);
+    sendDouble(1, zeroVol);
+    for (int i = 0; i < origSlopes.size(); i++) {
+        sendDouble(1,origSlopes[i]);
+        sendDouble(1,origIntercepts[i]);
+        std::cout << origSlopes[i] << "    " << origIntercepts[i] << "\n";
+    }
 
     /*span = ui->SpanInput->value();
     ui->CurSpan->display(span);
@@ -2601,10 +2651,65 @@ double hsm_full::receivedToInches(int dataInBits) {
     if (dataInBits < spanIntercept) {
         dataInBits = spanIntercept;
     }*/
+    //std::cout << spanIntercept << "    " << spanSlope << "\n";
+    std::cout << dataInBits << "\n";
+    dataInBits = (dataInBits - spanIntercept) / spanSlope;//((((dataInBits - spanIntercept) / spanSlope) - calIntercept) / calSlope * (1 / inchSlope)) / 1.057;
+    dataInBits = (dataInBits * diffGain) + zeroVol;
 
-    inches = dataInBits * 1/inchSlope;//((((dataInBits - spanIntercept) / spanSlope) - calIntercept) / calSlope * (1 / inchSlope)) / 1.057;
+    //dataInBits = dataInBits - 65;
     //std::cout << dataInBits << "\n";
+
+    if (dataInBits < potTru[1]) {
+        inches = (dataInBits - origIntercepts[0]) / origSlopes[0];
+    } else if (dataInBits < potTru[2]) {
+        inches = (dataInBits - origIntercepts[1]) / origSlopes[1];
+    } else if (dataInBits < potTru[3]) {
+        inches = (dataInBits - origIntercepts[2]) / origSlopes[2];
+    } else if (dataInBits < potTru[4]) {
+        inches = (dataInBits - origIntercepts[3]) / origSlopes[3];
+    } else if (dataInBits < potTru[5]) {
+        inches = (dataInBits - origIntercepts[4]) / origSlopes[4];
+    } else if (dataInBits < potTru[6]) {
+        inches = (dataInBits - origIntercepts[5]) / origSlopes[5];
+    } else if (dataInBits < potTru[7]) {
+        inches = (dataInBits - origIntercepts[6]) / origSlopes[6];
+    } else if (dataInBits < potTru[8]) {
+        inches = (dataInBits - origIntercepts[7]) / origSlopes[7];
+    } else {
+        inches = (dataInBits - origIntercepts[8]) / origSlopes[8];
+
+    }
+    //std::cout << "inches: " << inches << "\n";
     return inches;
+}
+
+int hsm_full::inchesToBits(int dataInInches) {
+    double bits;
+    double spanZeroPoint;
+
+
+    if (dataInInches < potInches[1]) {
+        bits = round((dataInInches * origSlopes[0]) + origIntercepts[0]);
+    } else if (dataInInches < potInches[2]) {
+        bits = round((dataInInches * origSlopes[1]) + origIntercepts[1]);
+    } else if (dataInInches < potInches[3]) {
+        bits = round((dataInInches * origSlopes[2]) + origIntercepts[2]);
+    } else if (dataInInches < potInches[4]) {
+        bits = round((dataInInches * origSlopes[3]) + origIntercepts[3]);
+    } else if (dataInInches < potInches[5]) {
+        bits = round((dataInInches * origSlopes[4]) + origIntercepts[4]);
+    } else if (dataInInches < potInches[6]) {
+        bits = round((dataInInches * origSlopes[5]) + origIntercepts[5]);
+    } else if (dataInInches < potInches[7]) {
+        bits = round((dataInInches * origSlopes[6]) + origIntercepts[6]);
+    } else if (dataInInches < potInches[8]) {
+        bits = round((dataInInches * origSlopes[7]) + origIntercepts[7]);
+    } else {
+        bits = round((dataInInches * origSlopes[8]) + origIntercepts[8]);
+
+    }
+    //std::cout << "inches: " << inches << "\n";
+    return bits;
 }
 
 void hsm_full::turnOnLow1() {

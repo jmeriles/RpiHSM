@@ -15,6 +15,7 @@ std::ofstream spanCalibrationFile;
 std::ofstream potCalibrationFile;
 std::ofstream spanCalibrationAllData;
 std::ofstream potCalibrationAllData;
+std::ofstream potCalibrationZeroData;
 int gainCounter = 0;
 QwtPlotCurve *curve1 = new QwtPlotCurve("Curve1");
 int potCalCount = 0;
@@ -41,6 +42,10 @@ std::vector <double> maxVals;
 std::vector <double> minVals;
 std::vector <double> potInches;
 std::vector <double> potTru;
+std::vector <double> potDiff;
+std::vector <double> zeroData;
+std::vector <double> origSlopes;
+std::vector <double> origIntercepts;
 std::vector <std::vector<std::vector<double>>> allSpanData;
 std::vector <std::vector<double>> allPotData;
 int allDataCount = 0;
@@ -52,6 +57,7 @@ double inchVal;
 int potInchCount = 0;
 double inchSlope;
 double inchIntercept;
+double diffGain;
 
 
 //QTimer *timer;
@@ -251,21 +257,61 @@ void SpanCalibration::activatePotCal() {
 }
 void SpanCalibration::setTotSpan() {
     inchVal = ui5->setTotSpan->value();
-    if(potInchCount < 5) {
+    if (potInches.size() > 9 && potInchCount == 0) {
+        potInches = {};
+        potTru = {};
+    }
+    if(potInchCount < 10) {
         potInches.push_back(inchVal);
         int truRead = sourcefunction->serialRead(1, 11, 3);
+        int diffRead = sourcefunction->serialRead(1, 11, 2);
         potTru.push_back(truRead);
+        potDiff.push_back(diffRead);
         potInchCount += 1;
         QString newText = QString::number(inchVal) + ", " + QString::number(truRead);
         ui5->Instructions->setText(newText);
     }
     else {
-        inchSlope = sourcefunction->LinearRegression(potInches,potTru)[0];
+        diffGain = sourcefunction->LinearRegression(potDiff,potTru)[0];
+        for (int i = 0; i < 9; i ++) {
+            origSlopes.push_back((potTru[i + 1] - potTru[i]) / (potInches[i + 1] - potInches[i]));
+            origIntercepts.push_back(potTru[i] - origSlopes[i] * potInches[i]);
+            std::cout << "Slope: " << origSlopes[i] << "\n";
+        }
+        maxOGValue = sourcefunction->serialRead(1, 11, 3);
+        totSpan = (maxOGValue - origIntercepts[8]) / origSlopes[8];
+        std::cout << "Diff Gain: " << diffGain << "\n";
+        /*inchSlope = sourcefunction->LinearRegression(potInches,potTru)[0];
         inchIntercept = sourcefunction->LinearRegression(potInches,potTru)[1];
         potInchCount = 0;
         std::cout << "Slope: " << inchSlope << "\n";
-        std::cout << "Intercept: " << inchIntercept << "\n";
+        std::cout << "Intercept: " << inchIntercept << "\n";*/
+        potCalibrationAllData.open("../PotCalibrationAll.txt",std::ofstream::out | std::ofstream::trunc);
+        printf("Saving Calibration Info\n");
+                for(int i = 0 ; i < potTru.size(); i++){
+                        potCalibrationAllData << potTru[i] << ", " << potInches[i] << "\n";
+                }
+                potCalibrationAllData << diffGain << ", " << totSpan << ", " << maxOGValue << "\n";
+                potCalibrationAllData.close();
+        potCalibrationFile.open("../potCal.txt",std::ofstream::out | std::ofstream::trunc);
+        printf("Saving Pot Calibration\n");
+        for(int i = 0; i < 4096; i++){
+            sourcefunction->serialWrite(1, 14, i);
+            delay(10);
+            int origVol = sourcefunction->serialRead(1, 11, 3);
+            int diffVol = sourcefunction->serialRead(1, 11, 2);
+            double zeroVol = -(diffVol * diffGain - origVol);
+            zeroData.push_back(zeroVol);
+            std::cout << "orig Vol:  " << origVol << "  Diff Vol:  " << diffVol << "  Zero Voltage:  " << zeroVol << "\n";
+        }
+        potCalibrationZeroData.open("../PotZeroVals.txt",std::ofstream::out | std::ofstream::trunc);
+        printf("Saving Calibration Info\n");
+                for(int i = 0 ; i < zeroData.size(); i++){
+                        potCalibrationZeroData << i << ", " << zeroData[i] << "\n";
+                }
+                potCalibrationZeroData.close();
     }
+
     ui5->curSpanDisplay->display(totSpan);
     //ui5->PotCalButton->setEnabled(true);
     ui5->SpanCalButton->setEnabled(true);
