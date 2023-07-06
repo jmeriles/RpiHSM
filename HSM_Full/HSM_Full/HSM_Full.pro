@@ -102,3 +102,20 @@ else:unix: LIBS += -L$$PWD/../../../../../../usr/local/qwt-6.2.0/lib/ -lqwt
 
 INCLUDEPATH += $$PWD/../../../../../../usr/local/qwt-6.2.0/include
 DEPENDPATH += $$PWD/../../../../../../usr/local/qwt-6.2.0/include
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../../../lib/release/ -lpigpiod_if
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../../../lib/debug/ -lpigpiod_if
+else:unix: LIBS += -L$$PWD/../../../../../../lib/ -lpigpiod_if
+
+INCLUDEPATH += $$PWD/../../../../../../
+DEPENDPATH += $$PWD/../../../../../../
+
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../../../lib/release/ -lpigpio
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../../../lib/debug/ -lpigpio
+else:unix: LIBS += -L$$PWD/../../../../../../lib/ -lpigpio
+
+INCLUDEPATH += $$PWD/../../../../../../
+DEPENDPATH += $$PWD/../../../../../../

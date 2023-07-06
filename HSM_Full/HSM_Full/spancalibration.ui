@@ -39,7 +39,7 @@
     <string>Calibrate Span</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="PotCalButton">
+  <widget class="QPushButton" name="UseLessButtonForNow">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -75,7 +75,7 @@
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="setTotSpanButton">
+  <widget class="QPushButton" name="PotCalButton">
    <property name="geometry">
     <rect>
      <x>320</x>

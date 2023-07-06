@@ -69,14 +69,17 @@ SpanCalibration::SpanCalibration(QMainWindow *parent, hsm_full *source) :
     sourcefunction = source;
     ui5->setupUi(this);
     connect(ui5->SpanCalButton,&QPushButton::released,this,&SpanCalibration::startCalibration);
+    //connect(ui5->PotCalButton, &QPushButton::released,this,&SpanCalibration::potCal);
     connect(ui5->PotCalButton, &QPushButton::released,this,&SpanCalibration::potCal);
-    connect(ui5->setTotSpanButton, &QPushButton::released,this,&SpanCalibration::setTotSpan);
     connect(ui5->activatePotCal, &QCheckBox::toggled,this,&SpanCalibration::activatePotCal);
     //window->cl
     closeCallback = [&](){
         timer->start();
         std::cout << "Window was closed" << "\n";
     };
+    QString newText = "Perform Different Calibrations\nSelect Controller\n\nAdd Cal Point: Begins Calibration of Potentiometer. Requires Gauge Blocks.\n\nCalibrate Span: "
+                        "Calibrates Gains for Span Control Circuit. Time Consuming. Be sure Potentiometer is at Max Extent Before Button is Pressed.";
+    ui5->Instructions->setText(newText);
 }
 
 
@@ -174,7 +177,7 @@ void SpanCalibration::plotCal(QVector<double> X, QVector<double> Y) {
     QApplication::processEvents();
 }
 
-void SpanCalibration::potCal() {
+/*void SpanCalibration::potCal() {
     QString newText = "Pick 30 points along Potentiometer Span to calibrate \n" + QString::number(potCalCount);
     ui5->Instructions->setText(newText);
     //ui5->Instructions->setText(QString::number(potCalCount));
@@ -239,7 +242,7 @@ void SpanCalibration::potCal() {
 
     plotCal(XCalData2,YCalData2);
 
-}
+}*/
 
 double SpanCalibration::BitToInch(int bitVal) {
     double newCalSlope = calSlope / totSpan * (maxOGValue - minOGValue);
@@ -255,23 +258,32 @@ void SpanCalibration::activatePotCal() {
         boxChecked = false;
     }
 }
-void SpanCalibration::setTotSpan() {
+void SpanCalibration::potCal() {
     inchVal = ui5->setTotSpan->value();
     if (potInches.size() > 9 && potInchCount == 0) {
         potInches = {};
         potTru = {};
     }
     if(potInchCount < 10) {
+        if (potInchCount == 0) {
+            sourcefunction->serialWrite(1, 14, 0);
+        }
         potInches.push_back(inchVal);
         int truRead = sourcefunction->serialRead(1, 11, 3);
         int diffRead = sourcefunction->serialRead(1, 11, 2);
         potTru.push_back(truRead);
         potDiff.push_back(diffRead);
         potInchCount += 1;
-        QString newText = QString::number(inchVal) + ", " + QString::number(truRead);
+        QString newText = QString::number(inchVal) + ", " + QString::number(truRead) + "\nNumber of Points Left: " + QString::number(10 - potInchCount);
+        if (potInchCount == 10) {
+            newText = newText + "\n\nMove Transducer to Furthest Extreme and Press Button One More Time";
+        }
         ui5->Instructions->setText(newText);
     }
     else {
+        QString newText = "Calibrating... ";
+        ui5->Instructions->setText(newText);
+        QApplication::processEvents();
         diffGain = sourcefunction->LinearRegression(potDiff,potTru)[0];
         for (int i = 0; i < 9; i ++) {
             origSlopes.push_back((potTru[i + 1] - potTru[i]) / (potInches[i + 1] - potInches[i]));
@@ -297,7 +309,7 @@ void SpanCalibration::setTotSpan() {
         printf("Saving Pot Calibration\n");
         for(int i = 0; i < 4096; i++){
             sourcefunction->serialWrite(1, 14, i);
-            delay(10);
+            delay(1);
             int origVol = sourcefunction->serialRead(1, 11, 3);
             int diffVol = sourcefunction->serialRead(1, 11, 2);
             double zeroVol = -(diffVol * diffGain - origVol);
@@ -310,6 +322,9 @@ void SpanCalibration::setTotSpan() {
                         potCalibrationZeroData << i << ", " << zeroData[i] << "\n";
                 }
                 potCalibrationZeroData.close();
+        sourcefunction->readAllFilesAndCalibrate();
+        newText = "Potentiometer Calibration Done. \nPress Calibrate Span Button if Gain Calibration is Needed";
+        ui5->Instructions->setText(newText);
     }
 
     ui5->curSpanDisplay->display(totSpan);

@@ -109,6 +109,7 @@ public slots:
     void turnOffHydraulics();
     void useSecondActuator();
     void Interlock_Window();
+    void readAllFilesAndCalibrate();
 
 signals:
     void sendSignal(int value);
@@ -212,7 +213,6 @@ public slots:
     void startCalibration();
     void plotCal(QVector<double> X, QVector<double> Y);
     void potCal();
-    void setTotSpan();
     void activatePotCal();
     double BitToInch(int bitVal);
 

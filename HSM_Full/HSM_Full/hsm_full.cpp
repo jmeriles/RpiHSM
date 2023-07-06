@@ -265,6 +265,40 @@ bool secondActuatorOn = false;
 double newSpan;
 double zeroVol;
 
+#define SPI_SS 25 // GPIO for slave select.
+
+#define ADCS 2    // Number of connected MCP3202.
+
+#define BITS 12            // Bits per reading.
+#define BX 6               // Bit position of data bit B11.
+#define B0 (BX + BITS - 1) // Bit position of data bit B0.
+
+#define MISO1 9   // ADC 1 MISO.
+#define MISO2 24  //     2
+#define BUFFER 250       // Generally make this buffer as large as possible.
+#define REPEAT_MICROS 40 // Reading every x microseconds.
+int MISO[ADCS]={MISO1, MISO2};
+rawSPI_t rawSPI =
+{
+   .clk     =  11, // GPIO for SPI clock.
+   .mosi    = 10, // GPIO for SPI MOSI.
+   .ss_pol  =  1, // Slave select resting level.
+   .ss_us   =  1, // Wait 1 micro after asserting slave select.
+   .clk_pol =  0, // Clock resting level.
+   .clk_pha =  0, // 0 sample on first edge, 1 sample on second edge.
+   .clk_us  =  1, // 2 clocks needed per bit so 500 kbps.
+};
+int wid, offset;
+char buff[2];
+gpioPulse_t final[2];
+char rx[8];
+int sample;
+int val;
+int cb, botCB, topOOL, reading, now_reading;
+float cbs_per_reading;
+rawWaveInfo_t rwi;
+double start, end;
+int Pause;
 
 //EDIT THIS FOR NEW HAT
 //int bitmapports;
@@ -294,6 +328,13 @@ void readForce();
 void readDisp();
 static void Call_Integrator();
 void eStop();
+int initializeLoad();
+void getReading(   int adcs,  // Number of attached ADCs.
+                   int *MISO, // The GPIO connected to the ADCs data out.
+                   int OOL,   // Address of first OOL for this reading.
+                   int bytes, // Bytes between readings.
+                   int bits,  // Bits per reading.
+                   char *buf);
 
 
 
@@ -933,7 +974,7 @@ hsm_full::hsm_full(QWidget *parent) :
             startControl();
         }
     };
-
+    initializeLoad();
     eStopActive = false;
     wiringPiSetup();			// Setup the library
     pinMode(7, OUTPUT);
@@ -954,59 +995,11 @@ hsm_full::hsm_full(QWidget *parent) :
     if((fd2=serialOpen("/dev/ttyAMA1",2000000))<0){
       qDebug("Unable to open serial device: %s\n",strerror(errno));
     }
-    potCalibration = readCalibrationFiles("PotCalibrationAll.txt");
-    for (int i = 0; i < potCalibration.size(); i++) {
-        potTru.push_back(potCalibration[i][0]);
-        potInches.push_back(potCalibration[i][1]);
-    }
-    for (int i = 0; i < potCalibration.size() - 1; i ++) {
-        origSlopes.push_back((potTru[i + 1] - potTru[i]) / (potInches[i + 1] - potInches[i]));
-        origIntercepts.push_back(potTru[i] - origSlopes[i] * potInches[i]);
-        std::cout << "Slope: " << origSlopes[i] << "    " << "Intercept: " << origIntercepts[i] << "\n";
-    }
-    diffGain = potCalibration[10][0];
-    totSpan = potCalibration[10][1];
-    totSpan = 11;
-    std::cout << "Diff Gain" << diffGain << "\n";
-    //calSlope = potCalibration[0][0];
-    //calIntercept = potCalibration[0][1];
-    //maxDiffValue = potCalibration[0][2];
-    //maxOGValue = potCalibration[0][3];
-    minDiffValue = 0;
-    //minOGValue = potCalibration[0][5];
-    //inchSlope = potCalibration[0][7];
-    //double newCalSlope = calSlope / totSpan * (maxOGValue - minOGValue);
-    //double minDiffInInch = (minDiffValue - calIntercept) / newCalSlope;
 
-    spanCalibration = readCalibrationFiles("AmpCalibration.txt");
-    std::cout << "Hello " << minOGValue << "\n";
-    std::cout << maxOGValue << "\n";
-    for (int i = 0; i < spanCalibration.size(); i++) {
-        std::vector<double> tempData;
-        for (int j = 1; j < spanCalibration[i].size(); j++) {
-            tempData.push_back(spanCalibration[i][j]);
-        }
-        spanSlope = spanCalibration[i][1];
-        spanIntercept = spanCalibration[i][2];
-        std::cout << "SpanTest: "<< spanCalibration[i][3] << "\n";
-        double spanInch = receivedToInches(spanCalibration[i][3]);
-        tempData.push_back(spanInch);
-        std::cout << "Span: "<< spanInch << "\n";
-        spanCalMap.insert({spanCalibration[i][0], tempData});
-        //inches = (dataInBits - spanIntercept - spanZeroPoint) / spanSlope;
-    }
-
-    std::vector<std::vector<double>> zeroData = readCalibrationFiles("PotZeroVals.txt");
-    for (int i = 0; i < zeroData.size(); i ++) {
-        zeroMap.push_back(std::vector <double> ());
-        zeroMap[i].push_back(i);
-        zeroMap[i].push_back(zeroData[i][1]);
-    }
-    zeroVol = zeroMap[0][1];
     serialFlush(fd);
     serialFlush(fd2);
 
-    spanCommand(totSpan, totSpan / 2);
+    readAllFilesAndCalibrate();
     timer = new QTimer(this);
     eStopTimer = new QTimer(this);
     eStopTimer -> start(10);
@@ -1964,17 +1957,18 @@ void hsm_full::spanCommand(double targetSpan, double targetZero){
     double ampedSpan = 100000000;
     int ampValue = 128;
     int zeroBit;
+
     std::cout << (totSpan) << "\n";
     std::map<double,std::vector<double>>::iterator mapIter;
     int ampPrecision = 0;
     for (mapIter = spanCalMap.begin(); mapIter != spanCalMap.end(); mapIter ++) {
-        std::cout << "Amped Precision: " << mapIter->second[4] << "\n";
         if (mapIter->second[4] >= targetSpan && mapIter->second[4] < ampedSpan) {
-            //if(mapIter->second[2] >ampPrecision){
-                //ampPrecision = mapIter->second[2];
+            if(mapIter->second[2] >ampPrecision){
+                ampPrecision = mapIter->second[2];
                 ampedSpan = mapIter -> second[4];
                 ampValue = mapIter -> first;
-            //}
+                std::cout << "Amped Precision: " << ampPrecision << "\n";
+            }
         }
     }
     if (ampedSpan == 100000000) {
@@ -1986,20 +1980,25 @@ void hsm_full::spanCommand(double targetSpan, double targetZero){
     std::cout << "target zero: " << targetZero << "\n";
     zeroBit = inchesToBits(targetZero);
     std::cout << "Bit zero: " << zeroBit << "\n";
-    int sendZero;
+    int sendZero = 0;
     for (int i = 0; i < zeroMap.size(); i++) {
+        std::cout << zeroMap.size() << "    "<< i << "\n";
+
         if (abs(zeroMap[i][1] - zeroBit) < 5) {
+            std::cout << "test 1\n";
             sendZero = round(zeroMap[i][0]);
             zeroVol = zeroMap[i][1];
         }
     }
-    if (zeroVol < 0) {
+    std::cout << "test 2\n";
+    /*if (zeroVol < 0) {
         zeroVol = 0;
-    }
+    }*/
 
 
-    sendZero = 0;
-    zeroVol = 0;
+    //sendZero = 0;
+    //zeroVol = 0;
+    std::cout << "test 3\n";
     serialWrite(1, 14, sendZero);
     std::cout << "Send Zero: " << sendZero << "\n";
     //std::cout <<"Span: " << ampedSpan << "   ampValue: " << ampValue << "\n";
@@ -2053,15 +2052,35 @@ void hsm_full::calForce(){
 }
 
 void readForce(){
-    //f1 = (expi.adc_read_raw(1,0)-1650.0)*3.3/1650.0-zeroForce;
-    //f2 = (expi.adc_read_raw(1,0)-1650.0)*3.3/1650.0-zeroForce;
-    //f3 = (expi.adc_read_raw(1,0)-1650.0)*3.3/1650.0-zeroForce;
-    f1 = 0;
-    f2 = 0;
-    f3 = 0;
-    received_Force=.3*fprev+(1-.3)*(f1+f2+f3)/3;
-    //force_bits = expi.adc_read_raw(1,0);
+    std::cout << "Bot CB  " << cbs_per_reading << "\n";
+
+    std::cout << "raw Wave  " << rawWaveCB() << "\n";
+
+    cb = rawWaveCB() - botCB;
+
+    /*now_reading = (float) cb / cbs_per_reading;
+
+    // Loop gettting the fresh readings.
+
+    while (now_reading != reading)
+    {
+        //f1 = (expi.adc_read_raw(1,0)-1650.0)*3.3/1650.0-zeroForce;
+        //f2 = (expi.adc_read_raw(1,0)-1650.0)*3.3/1650.0-zeroForce;
+        //f3 = (expi.adc_read_raw(1,0)-1650.0)*3.3/1650.0-zeroForce;
+        f1 = 0;
+        f2 = 0;
+        f3 = 0;
+        //received_Force=.3*fprev+(1-.3)*(f1+f2+f3)/3;
+        getReading(ADCS, MISO, topOOL - ((reading%BUFFER)*BITS) - 1, 2, BITS, rx);
+        int i = 0;
+        force_bits = (rx[i*2]<<4) + (rx[(i*2)+1]>>4);
+        received_Force = force_bits;
+        fprev = received_Force;
+        if (++reading >= BUFFER) reading = 0;
+    }*/
     fprev = received_Force;
+    received_Force = 0;
+
     //qDebug("%d",force_bits);
 }
 
@@ -2862,3 +2881,192 @@ void hsm_full::Interlock_Window(){
     newStructSoft->show();
 }
 
+void hsm_full::readAllFilesAndCalibrate() {
+    zeroMap = {};
+    origSlopes = {};
+    origIntercepts = {};
+    potTru = {};
+    potInches = {};
+    spanCalMap.clear();
+
+    potCalibration = readCalibrationFiles("PotCalibrationAll.txt");
+    for (int i = 0; i < potCalibration.size(); i++) {
+        potTru.push_back(potCalibration[i][0]);
+        potInches.push_back(potCalibration[i][1]);
+    }
+    for (int i = 0; i < potCalibration.size() - 1; i ++) {
+        origSlopes.push_back((potTru[i + 1] - potTru[i]) / (potInches[i + 1] - potInches[i]));
+        origIntercepts.push_back(potTru[i] - origSlopes[i] * potInches[i]);
+        std::cout << "Slope: " << origSlopes[i] << "    " << "Intercept: " << origIntercepts[i] << "\n";
+    }
+    diffGain = potCalibration[10][0];
+    totSpan = potCalibration[10][1];
+    //totSpan = 11;
+    std::cout << "Diff Gain" << diffGain << "\n";
+    //calSlope = potCalibration[0][0];
+    //calIntercept = potCalibration[0][1];
+    //maxDiffValue = potCalibration[0][2];
+    //maxOGValue = potCalibration[0][3];
+    minDiffValue = 0;
+    //minOGValue = potCalibration[0][5];
+    //inchSlope = potCalibration[0][7];
+    //double newCalSlope = calSlope / totSpan * (maxOGValue - minOGValue);
+    //double minDiffInInch = (minDiffValue - calIntercept) / newCalSlope;
+
+    spanCalibration = readCalibrationFiles("AmpCalibration.txt");
+    std::cout << "Hello " << minOGValue << "\n";
+    std::cout << maxOGValue << "\n";
+    for (int i = 0; i < spanCalibration.size(); i++) {
+        std::vector<double> tempData;
+        for (int j = 1; j < spanCalibration[i].size(); j++) {
+            tempData.push_back(spanCalibration[i][j]);
+        }
+        spanSlope = spanCalibration[i][1];
+        spanIntercept = spanCalibration[i][2];
+        std::cout << "SpanTest: "<< spanCalibration[i][3] << "\n";
+        double spanInch = receivedToInches(spanCalibration[i][3]);
+        tempData.push_back(spanInch);
+        std::cout << "Span: "<< spanInch << "\n";
+        spanCalMap.insert({spanCalibration[i][0], tempData});
+        //inches = (dataInBits - spanIntercept - spanZeroPoint) / spanSlope;
+    }
+
+    std::vector<std::vector<double>> zeroData = readCalibrationFiles("PotZeroVals.txt");
+    for (int i = 0; i < zeroData.size(); i ++) {
+        zeroMap.push_back(std::vector <double> ());
+        zeroMap[i].push_back(i);
+        zeroMap[i].push_back(zeroData[i][1]);
+    }
+    zeroVol = zeroMap[0][1];
+    spanCommand(totSpan, 0);
+}
+
+int initializeLoad() {
+
+    //if (argc > 1) Pause = atoi(argv[1]); else Pause =0;
+    Pause = 0;
+    std::cout << "Hello Test 1 " << "\n";
+    if (gpioInitialise() < 0) return 1;
+
+    // Need to set GPIO as outputs otherwise wave will have no effect.
+    std::cout << "Hello Test 2 " << "\n";
+    gpioSetMode(rawSPI.clk,  PI_OUTPUT);
+    gpioSetMode(rawSPI.mosi, PI_OUTPUT);
+    gpioSetMode(SPI_SS,      PI_OUTPUT);
+    std::cout << "Hello Test 3 " << "\n";
+    gpioWaveAddNew(); // Flush any old unused wave data.
+
+    offset = 0;
+
+    for (i=0; i<BUFFER; i++)
+       {
+          buff[0] = 0xC0; // Start bit, single ended, channel 0.
+
+          rawWaveAddSPI(&rawSPI, offset, SPI_SS, buff, 2, BX, B0, B0);
+
+          /*
+             REPEAT_MICROS must be more than the time taken to
+             transmit the SPI message.
+          */
+
+          offset += REPEAT_MICROS;
+       }
+
+       // Force the same delay after the last reading.
+
+       final[0].gpioOn = 0;
+       final[0].gpioOff = 0;
+       final[0].usDelay = offset;
+
+       final[1].gpioOn = 0; // Need a dummy to force the final delay.
+       final[1].gpioOff = 0;
+       final[1].usDelay = 0;
+
+       gpioWaveAddGeneric(2, final);
+
+       wid = gpioWaveCreate(); // Create the wave from added data.
+
+       if (wid < 0)
+       {
+          fprintf(stderr, "Can't create wave, %d too many?\n", BUFFER);
+          return 1;
+       }
+
+       /*
+          The wave resources are now assigned,  Get the number
+          of control blocks (CBs) so we can calculate which reading
+          is current when the program is running.
+       */
+
+       rwi = rawWaveInfo(wid);
+
+       printf("# cb %d-%d ool %d-%d del=%d ncb=%d nb=%d nt=%d\n",
+          rwi.botCB, rwi.topCB, rwi.botOOL, rwi.topOOL, rwi.deleted,
+          rwi.numCB,  rwi.numBOOL,  rwi.numTOOL);
+
+       /*
+          CBs are allocated from the bottom up.  As the wave is being
+          transmitted the current CB will be between botCB and topCB
+          inclusive.
+       */
+
+       botCB = rwi.botCB;
+
+       /*
+          Assume each reading uses the same number of CBs (which is
+          true in this particular example).
+       */
+
+       cbs_per_reading = (float)rwi.numCB / (float)BUFFER;
+
+       std::cout << "CBs per reading  " << cbs_per_reading << "\n";
+
+       printf("# cbs=%d per read=%.1f base=%d\n",
+          rwi.numCB, cbs_per_reading, botCB);
+
+       /*
+          OOL are allocated from the top down. There are BITS bits
+          for each ADC reading and BUFFER ADC readings.  The readings
+          will be stored in topOOL - 1 to topOOL - (BITS * BUFFER).
+       */
+
+       topOOL = rwi.topOOL;
+
+       fprintf(stderr, "starting...\n");
+
+       if (Pause) time_sleep(Pause); // Give time to start a monitor.
+
+       gpioWaveTxSend(wid, PI_WAVE_MODE_REPEAT);
+
+       reading = 0;
+
+       sample = 0;
+
+       start = time_time();
+}
+
+void getReading(
+   int adcs,  // Number of attached ADCs.
+   int *MISO, // The GPIO connected to the ADCs data out.
+   int OOL,   // Address of first OOL for this reading.
+   int bytes, // Bytes between readings.
+   int bits,  // Bits per reading.
+   char *buff)
+{
+   int i, a, p;
+   uint32_t level;
+
+   p = OOL;
+
+   for (i=0; i<bits; i++)
+   {
+      level = rawWaveGetOut(p);
+
+      for (a=0; a<adcs; a++)
+      {
+         putBitInBytes(i, buff+(bytes*a), level & (1<<MISO[a]));
+      }
+
+      p--;
+   }
+}
