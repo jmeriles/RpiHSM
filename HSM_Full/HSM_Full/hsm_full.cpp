@@ -42,7 +42,7 @@ PyObject *PlotResultsArgs, *PlotResultsOut;
 
 using namespace ABElectronics_CPP_Libraries;
 
-std::ifstream EQ("/home/pi/Desktop/HSM_Full/HSM_Full/El_Centro_interp.txt");
+std::ifstream EQ("/home/pi/Desktop/RpiHSM/HSM_Full/HSM_Full/El_Centro_interp.txt");
 double d_prev[3]; //This list stores the last 3 values for the displacement
 double d_next; //This is the next displacement calculated by the integrator
 double Force; // This is the Force measurement
@@ -265,41 +265,14 @@ bool secondActuatorOn = false;
 double newSpan;
 double zeroVol;
 
-#define SPI_SS 25 // GPIO for slave select.
+#define SPI_CLOCK 500000     // 1 MHz
 
-#define ADCS 2    // Number of connected MCP3202.
-
-#define BITS 12            // Bits per reading.
-#define BX 6               // Bit position of data bit B11.
-#define B0 (BX + BITS - 1) // Bit position of data bit B0.
-
-#define MISO1 9   // ADC 1 MISO.
-#define MISO2 24  //     2
-#define BUFFER 250       // Generally make this buffer as large as possible.
-#define REPEAT_MICROS 40 // Reading every x microseconds.
-int MISO[ADCS]={MISO1, MISO2};
-rawSPI_t rawSPI =
-{
-   .clk     =  11, // GPIO for SPI clock.
-   .mosi    = 10, // GPIO for SPI MOSI.
-   .ss_pol  =  1, // Slave select resting level.
-   .ss_us   =  1, // Wait 1 micro after asserting slave select.
-   .clk_pol =  0, // Clock resting level.
-   .clk_pha =  0, // 0 sample on first edge, 1 sample on second edge.
-   .clk_us  =  1, // 2 clocks needed per bit so 500 kbps.
-};
-int wid, offset;
-char buff[2];
-gpioPulse_t final[2];
-char rx[8];
-int sample;
-int val;
-int cb, botCB, topOOL, reading, now_reading;
-float cbs_per_reading;
-rawWaveInfo_t rwi;
-double start, end;
-int Pause;
-
+// See MCP3202 data sheet FIGURE 6-1 SPI Communication using 8-bit segments
+#define MCP3202_START 1       // 0000 0001
+#define MCP3202_CONFIG  0xA0  // 101x xxxx (Single-Ended + Channel 0 + MSB first)
+#define MCP2002_BUFFER_SIZE 3
+uint8_t buffer[MCP2002_BUFFER_SIZE]; // See FIGURE 6-1 on data sheet
+int ADC;        // Voltage from ADC, as integer 0 -> 4095
 //EDIT THIS FOR NEW HAT
 //int bitmapports;
 //int ports[15];
@@ -324,18 +297,11 @@ static void periodic_task_init(struct period_info *pinfo);
 static void do_pred_cor();
 static void const_vel();
 static void wait_rest_of_period(struct period_info *pinfo);
-void readForce();
+void readForce(int channel);
 void readDisp();
 static void Call_Integrator();
 void eStop();
 int initializeLoad();
-void getReading(   int adcs,  // Number of attached ADCs.
-                   int *MISO, // The GPIO connected to the ADCs data out.
-                   int OOL,   // Address of first OOL for this reading.
-                   int bytes, // Bytes between readings.
-                   int bits,  // Bits per reading.
-                   char *buf);
-
 
 
 void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
@@ -471,7 +437,7 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
                 plot_obj->Xdata2.append((double) time_in_s1);
                 plot_obj->Xdata.append((double) time_in_s1);
 
-                readForce();
+                readForce(0);
                 received_Disp = plot_obj->receivedToInches((double)plot_obj->serialRead(1, 1, 0));
                 //received_Disp = 0;
                 //force.push_back(-received_Force);
@@ -683,7 +649,7 @@ static void const_vel()
         xp = xn[intcount];
         eqp = GM[intcount];
         //fp = f_prev+df;
-        readForce();
+        readForce(0);
         fp = -received_Force;
         //fp = 3.3* xp;
 
@@ -1210,7 +1176,7 @@ int hsm_full::update()
     //Py_BEGIN_ALLOW_THREADS;
     //PyEval_InitThreads();
     PyObject *sysPath = PySys_GetObject((char*)"path");
-    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/HSM_Full"));
+    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/RpiHSM/HSM_Full/HSM_Full"));
     pName = PyUnicode_FromString("Time_Integrator");
     pName2 =PyUnicode_FromString("testFunc");
     pModule = PyImport_Import(pName);
@@ -1458,7 +1424,7 @@ void hsm_full::stiffTest()
            while(A<=Amax){
                    A = A+1;
                    qDebug("%d",index);
-                   readForce();
+                   readForce(0);
                    force.push_back(received_Force);
                    if(microcont == 1){
                        xt.push_back((A-2048)*span/2048);
@@ -1499,7 +1465,7 @@ void hsm_full::stiffTest()
            while(A>=Amin){
                A = A-1;
                qDebug("%d",index);
-               readForce();
+               readForce(0);
                force.push_back(received_Force);
                if(microcont == 1){
                    xt.push_back((A-2048)*span/2048);
@@ -1540,7 +1506,7 @@ void hsm_full::stiffTest()
            while(A<=Astable){
                A = A+1;
                qDebug("%d",index);
-               readForce();
+               readForce(0);
                force.push_back(received_Force);
                if(microcont == 1){
                    xt.push_back((A-2048)*span/2048);
@@ -1880,7 +1846,7 @@ void hsm_full::updateLCD(){
 
 
 
-    readForce();
+    readForce(0);
 
     ui->Force->display(received_Force);
     ui->CurPos->display(relative_Disp);
@@ -2051,12 +2017,7 @@ void hsm_full::calForce(){
     qDebug("%f",zeroForce);
 }
 
-void readForce(){
-    std::cout << "Bot CB  " << cbs_per_reading << "\n";
-
-    std::cout << "raw Wave  " << rawWaveCB() << "\n";
-
-    cb = rawWaveCB() - botCB;
+void readForce(int channel){
 
     /*now_reading = (float) cb / cbs_per_reading;
 
@@ -2078,8 +2039,26 @@ void readForce(){
         fprev = received_Force;
         if (++reading >= BUFFER) reading = 0;
     }*/
-    fprev = received_Force;
-    received_Force = 0;
+    int SS;
+    if (channel == 0) {
+        SS = 10;
+    } else if(channel == 1) {
+        SS = 11;
+    } else {
+        std::cout << "Channel must be 0 or 1 \n";
+        SS = 10;
+    }
+    digitalWrite (SS, 0) ;
+    buffer[0] = MCP3202_START; // Set output buffrt with MCP3202 configuration
+    buffer[1] = MCP3202_CONFIG;
+    buffer[2] = 0;
+
+    wiringPiSPIDataRW(channel, buffer, MCP2002_BUFFER_SIZE); // Read and write buffer
+
+    ADC = (buffer[2] | ((buffer[1] & 0x0F) << 8));
+    digitalWrite (SS, 1) ;
+    fprev = ADC;
+    received_Force = ADC;
 
     //qDebug("%d",force_bits);
 }
@@ -2372,7 +2351,7 @@ int hsm_full::plotResults(){
     Py_Initialize();
     import_array();
     PyObject *sysPath = PySys_GetObject((char*)"path");
-    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/HSM_Full"));  // path to the module to import
+    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/RpiHSM/HSM_Full/HSM_Full"));  // path to the module to import
     PlotResultsName = PyUnicode_FromString("PlotHybridResults");
     PlotResultsMethod = PyImport_Import(PlotResultsName);
 
@@ -2564,7 +2543,7 @@ std::vector <std::vector <double>>  hsm_full::readCalibrationFiles(std::string f
     struct dirent *x;
     std::string *Data;
     bool result = FALSE;
-    if ((directory = opendir("/home/jim53/Desktop/HSM_Full/")) != NULL){
+    if ((directory = opendir("/home/jim53/Desktop/RpiHSM/HSM_Full/HSM_Full")) != NULL){
         while((x=readdir(directory))!=NULL){
             if(fileName==x->d_name){
                     printf("attempt");
@@ -2576,7 +2555,7 @@ std::vector <std::vector <double>>  hsm_full::readCalibrationFiles(std::string f
     if(result)   // if file is present then....
       {
         std::cout << "Pot calibration file is present" << "\n";
-        std::string calDir = "/home/jim53/Desktop/HSM_Full/";
+        std::string calDir = "/home/jim53/Desktop/RpiHSM/HSM_Full/HSM_Full/";
         for(int i = 0; i <= (int)fileName.size(); i++)
             {
                 calDir.push_back(fileName.c_str()[i]);
@@ -2587,6 +2566,7 @@ std::vector <std::vector <double>>  hsm_full::readCalibrationFiles(std::string f
             std::vector<float> dataRow;
             std::string line, data;
             int lineCount = 0;
+
             while(getline(fileName, line)){
                 std::stringstream str(line);
                 returnVector.push_back({});
@@ -2890,6 +2870,7 @@ void hsm_full::readAllFilesAndCalibrate() {
     spanCalMap.clear();
 
     potCalibration = readCalibrationFiles("PotCalibrationAll.txt");
+
     for (int i = 0; i < potCalibration.size(); i++) {
         potTru.push_back(potCalibration[i][0]);
         potInches.push_back(potCalibration[i][1]);
@@ -2942,131 +2923,9 @@ void hsm_full::readAllFilesAndCalibrate() {
 }
 
 int initializeLoad() {
+    setbuf(stdout, NULL); // NetBeans hack: disable buffering on stdout
+    wiringPiSetup();
+    wiringPiSPISetup(1, SPI_CLOCK); // Set SPI clock
+    wiringPiSPISetup(0, SPI_CLOCK); // Set SPI clock
 
-    //if (argc > 1) Pause = atoi(argv[1]); else Pause =0;
-    Pause = 0;
-    std::cout << "Hello Test 1 " << "\n";
-    if (gpioInitialise() < 0) return 1;
-
-    // Need to set GPIO as outputs otherwise wave will have no effect.
-    std::cout << "Hello Test 2 " << "\n";
-    gpioSetMode(rawSPI.clk,  PI_OUTPUT);
-    gpioSetMode(rawSPI.mosi, PI_OUTPUT);
-    gpioSetMode(SPI_SS,      PI_OUTPUT);
-    std::cout << "Hello Test 3 " << "\n";
-    gpioWaveAddNew(); // Flush any old unused wave data.
-
-    offset = 0;
-
-    for (i=0; i<BUFFER; i++)
-       {
-          buff[0] = 0xC0; // Start bit, single ended, channel 0.
-
-          rawWaveAddSPI(&rawSPI, offset, SPI_SS, buff, 2, BX, B0, B0);
-
-          /*
-             REPEAT_MICROS must be more than the time taken to
-             transmit the SPI message.
-          */
-
-          offset += REPEAT_MICROS;
-       }
-
-       // Force the same delay after the last reading.
-
-       final[0].gpioOn = 0;
-       final[0].gpioOff = 0;
-       final[0].usDelay = offset;
-
-       final[1].gpioOn = 0; // Need a dummy to force the final delay.
-       final[1].gpioOff = 0;
-       final[1].usDelay = 0;
-
-       gpioWaveAddGeneric(2, final);
-
-       wid = gpioWaveCreate(); // Create the wave from added data.
-
-       if (wid < 0)
-       {
-          fprintf(stderr, "Can't create wave, %d too many?\n", BUFFER);
-          return 1;
-       }
-
-       /*
-          The wave resources are now assigned,  Get the number
-          of control blocks (CBs) so we can calculate which reading
-          is current when the program is running.
-       */
-
-       rwi = rawWaveInfo(wid);
-
-       printf("# cb %d-%d ool %d-%d del=%d ncb=%d nb=%d nt=%d\n",
-          rwi.botCB, rwi.topCB, rwi.botOOL, rwi.topOOL, rwi.deleted,
-          rwi.numCB,  rwi.numBOOL,  rwi.numTOOL);
-
-       /*
-          CBs are allocated from the bottom up.  As the wave is being
-          transmitted the current CB will be between botCB and topCB
-          inclusive.
-       */
-
-       botCB = rwi.botCB;
-
-       /*
-          Assume each reading uses the same number of CBs (which is
-          true in this particular example).
-       */
-
-       cbs_per_reading = (float)rwi.numCB / (float)BUFFER;
-
-       std::cout << "CBs per reading  " << cbs_per_reading << "\n";
-
-       printf("# cbs=%d per read=%.1f base=%d\n",
-          rwi.numCB, cbs_per_reading, botCB);
-
-       /*
-          OOL are allocated from the top down. There are BITS bits
-          for each ADC reading and BUFFER ADC readings.  The readings
-          will be stored in topOOL - 1 to topOOL - (BITS * BUFFER).
-       */
-
-       topOOL = rwi.topOOL;
-
-       fprintf(stderr, "starting...\n");
-
-       if (Pause) time_sleep(Pause); // Give time to start a monitor.
-
-       gpioWaveTxSend(wid, PI_WAVE_MODE_REPEAT);
-
-       reading = 0;
-
-       sample = 0;
-
-       start = time_time();
-}
-
-void getReading(
-   int adcs,  // Number of attached ADCs.
-   int *MISO, // The GPIO connected to the ADCs data out.
-   int OOL,   // Address of first OOL for this reading.
-   int bytes, // Bytes between readings.
-   int bits,  // Bits per reading.
-   char *buff)
-{
-   int i, a, p;
-   uint32_t level;
-
-   p = OOL;
-
-   for (i=0; i<bits; i++)
-   {
-      level = rawWaveGetOut(p);
-
-      for (a=0; a<adcs; a++)
-      {
-         putBitInBytes(i, buff+(bytes*a), level & (1<<MISO[a]));
-      }
-
-      p--;
-   }
 }

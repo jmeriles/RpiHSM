@@ -35,6 +35,8 @@ extern "C" {
 #include <QWidget>
 #include <QtGui/QCloseEvent>
 #include <functional>
+#include "wiringPiSPI.h"
+#include <linux/spi/spidev.h>
 
 
 namespace Ui {

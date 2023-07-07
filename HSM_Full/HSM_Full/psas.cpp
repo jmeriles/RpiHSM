@@ -459,7 +459,7 @@ int PSAS::setupModel(){
     Py_Initialize();
     import_array();
     PyObject *sysPath = PySys_GetObject((char*)"path");
-    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/HSM_Full"));  // path to the module to import
+    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/RpiHSM/HSM_Full/HSM_Full"));  // path to the module to import
     ModelSetupName = PyUnicode_FromString("Model_Setup");
     sw = ui2->selfWeightCheck->isChecked();
     Props = {twodthreed,sw};
@@ -650,7 +650,7 @@ int PSAS::plotModel(){
     Py_Initialize();
     import_array();
     PyObject *sysPath = PySys_GetObject((char*)"path");
-    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/HSM_Full"));  // path to the module to import
+    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/RpiHSM/HSM_Full/HSM_Full"));  // path to the module to import
     PlotModelName = PyUnicode_FromString("CreatePlot");
     PlotModelMethod = PyImport_Import(PlotModelName);
 
@@ -689,7 +689,7 @@ void PSAS::submitEQ(){
     GMname = ui2->plainTextEdit->toPlainText().toStdString();
     printf("%s\n",GMname.c_str());
     bool result = FALSE;
-    if ((directory = opendir("/home/jim53/Desktop/HSM_Full")) != NULL){
+    if ((directory = opendir("/home/jim53/Desktop/RpiHSM/HSM_Full/HSM_Full")) != NULL){
         while((x=readdir(directory))!=NULL){
             if(GMname==x->d_name){
                     printf("attempt");
@@ -702,7 +702,7 @@ void PSAS::submitEQ(){
     if(result)   // if file is present then....
       {
         ui2->plainTextEdit->setPlainText("file is present");
-        std::string gmdir = "/home/jim53/Desktop/HSM_Full/";
+        std::string gmdir = "/home/jim53/Desktop/RpiHSM/HSM_Full/HSM_Full";
         for(int i = 0; i<= (int)GMname.size(); i++)
             {
                 gmdir.push_back(GMname.c_str()[i]);
@@ -731,7 +731,7 @@ int PSAS::submitDynOpt(){
     Py_Initialize();
     import_array();
     PyObject *sysPath = PySys_GetObject((char*)"path");
-    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/HSM_Full"));  // path to the module to import
+    PyList_Append(sysPath,PyUnicode_FromString("/home/jim53/Desktop/RpiHSM/HSM_Full/HSM_Full"));  // path to the module to import
     GMName = PyUnicode_FromString("GMread");
     GMMethod = PyImport_Import(GMName);
     int GM_dim[1] = {(int)GM.size()};
