@@ -24,6 +24,7 @@ extern "C" {
 #include <fstream>
 #include <vector>
 #include <bitset>
+#include <qwt_plot_legenditem.h>
 
 
 //variables for sending and receiving over serial
@@ -160,6 +161,7 @@ double ICommand = .0001;
 double DCommand = 0;
 double slideCommand;
 double received_Force;
+double received_Force2;
 double received_Disp;
 double received_Disp2;
 bool sliderActive = 0;
@@ -204,6 +206,8 @@ double loop_in_mill_beg;
 double loop_in_s_end;
 double loop_in_mill_end;
 double runaxlim = 10;
+double runaxlimLoad = 60;
+#define PLOTREFRESH 60;
 std::vector<double> CommandVec{0};
 std::vector<double> DispVec{0};
 std::vector<double> CommandTime{0};
@@ -244,6 +248,7 @@ int SerialDisp;
 int SerialDisp2;
 int fd;
 int fd2;
+int fd3;
 char received[8];
 int numReceived;
 unsigned char sendData[4];
@@ -264,6 +269,14 @@ bool eStopActive;
 bool secondActuatorOn = false;
 double newSpan;
 double zeroVol;
+double loadCellZeroInBits;
+double loadCellSlope;
+bool legendPlotted = false;
+QwtPlotCurve *curve1 = new QwtPlotCurve("Curve1");
+QwtPlotCurve *curve2 = new QwtPlotCurve("Curve2");
+QwtPlotCurve *curve3 = new QwtPlotCurve("Curve3");
+QwtPlotCurve *curve4 = new QwtPlotCurve("Curve4");
+QwtPlotCurve *curve5 = new QwtPlotCurve("Curve5");
 
 #define SPI_CLOCK 500000     // 1 MHz
 
@@ -302,6 +315,7 @@ void readDisp();
 static void Call_Integrator();
 void eStop();
 int initializeLoad();
+int readFromADC(int SS,int channel);
 
 
 void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
@@ -956,14 +970,18 @@ hsm_full::hsm_full(QWidget *parent) :
     ui->setupUi(this);
 
     if((fd=serialOpen("/dev/ttyAMA0",2000000))<0){
-      qDebug("Unable to open serial device: %s\n",strerror(errno));
+      qDebug("Unable to open serial device 1: %s\n",strerror(errno));
     }
     if((fd2=serialOpen("/dev/ttyAMA1",2000000))<0){
-      qDebug("Unable to open serial device: %s\n",strerror(errno));
+      qDebug("Unable to open serial device 2: %s\n",strerror(errno));
+    }
+    if((fd3=serialOpen("/dev/serial/by-id/usb-Teensyduino_Triple_Serial_13150860-if00",9600))<0){
+      qDebug("Unable to open serial device 3: %s\n",strerror(errno));
     }
 
     serialFlush(fd);
     serialFlush(fd2);
+    serialFlush(fd3);
 
     readAllFilesAndCalibrate();
     timer = new QTimer(this);
@@ -982,6 +1000,12 @@ hsm_full::hsm_full(QWidget *parent) :
     ui->Act2LowOn->setText("Off");
     ui->Act2HighOn->setText("Off");
     wiringPiISR(2, INT_EDGE_RISING, &eStop);
+
+    //Temporary load cell parameters
+    loadCellZeroInBits = 1650;
+    loadCellSlope = 1.0 / 100.0;
+
+
     qDebug("Test Starts now!");
     /*if (microcont ==1 or microcont ==2){
        // Setup I2C communication
@@ -1059,22 +1083,11 @@ hsm_full::hsm_full(QWidget *parent) :
     ui->DDisp->display(DCommand);
     ui->CurSpan->display(span);
     index = 0;
-    m_button = new QPushButton("Start Button",this);
-    m_button->setGeometry(QRect(QPoint(30, 250), QSize(99, 30)));
-    n_button = new QPushButton("Stiffness Test",this);
-    n_button->setGeometry(QRect(QPoint(180, 250), QSize(99, 30)));
-    s_button = new QPushButton("Save",this);
-    s_button->setGeometry(QRect(QPoint(330, 250), QSize(99, 30)));
 
 
-    connect(m_button, &QPushButton::released, this, &hsm_full::update);
-    connect(n_button, &QPushButton::released, this, &hsm_full::stiffTest);
-    connect(s_button, &QPushButton::released, this, &hsm_full::save);
-
-    //wiringPiSetup();
-    //pinMode(21,OUTPUT);
-    //digitalWrite(21,HIGH);
-
+    connect(ui->startButton, &QPushButton::released, this, &hsm_full::update);
+    connect(ui->stiffButton, &QPushButton::released, this, &hsm_full::stiffTest);
+    connect(ui->saveButton, &QPushButton::released, this, &hsm_full::save);
     connect(ui->CommandButton,&QPushButton::released,this,&hsm_full::sendCommand);
     connect(ui->PButton,&QPushButton::released,this,&hsm_full::sendP);
     connect(ui->IButton,&QPushButton::released,this,&hsm_full::sendI);
@@ -1356,13 +1369,23 @@ void hsm_full::updatePlot()
     index++;
     //qDebug("tick %f",dispCommand);
 
-    QwtPlotCurve *curve1 = new QwtPlotCurve("Curve1");
+    /*QwtPlotCurve *curve1 = new QwtPlotCurve("Curve1");
     QwtPlotCurve *curve2 = new QwtPlotCurve("Curve2");
     QwtPlotCurve *curve3 = new QwtPlotCurve("Curve3");
+    QwtPlotCurve *curve4 = new QwtPlotCurve("Curve4");
+    QwtPlotCurve *curve5 = new QwtPlotCurve("Curve5");*/
     curve1->setPen(QColor(Qt::red));
     curve3->setPen(QColor(Qt::green));
+    curve4->setPen(QColor(Qt::red));
+    curve5->setPen(QColor(Qt::green));
 
-
+    if (legendPlotted == false) {
+        QwtPlotLegendItem * legendItem1 = new QwtPlotLegendItem;
+        QwtPlotLegendItem * legendItem2 = new QwtPlotLegendItem;
+        legendItem1->attach(ui->qwtPlot);
+        legendItem2->attach(ui->qwtPlot_2);
+        legendPlotted = true;
+    }
     //Xdata.removeFirst();
     //Ydata.removeFirst();
 
@@ -1371,6 +1394,9 @@ void hsm_full::updatePlot()
     curve1->setSamples(Xdata,Ydata);
     //pthread_mutex_unlock(&race_mutex);
     curve1->attach(ui->qwtPlot);
+
+    curve4->setSamples(HystDisp1,loadCellData1);
+    curve4->attach(ui->qwtPlot_2);
 
     if(commandPlotting ==1){
        //pthread_mutex_lock(&race_mutex);
@@ -1382,8 +1408,11 @@ void hsm_full::updatePlot()
     if(secondActuatorOn) {
         curve3->setSamples(XdataAct2,YdataAct2);
         curve3->attach(ui->qwtPlot);
+        curve5->setSamples(HystDisp2,loadCellData2);
+        curve5->attach(ui->qwtPlot_2);
     }
     ui->qwtPlot->replot();
+    ui->qwtPlot_2->replot();
 
 
 }
@@ -1730,7 +1759,7 @@ void hsm_full::sendCommand(){
     //printf("%f",dispCommand);
     command = 0;
     data_to_send = (uint16_t) ((dispCommand + newSpan / 2)  * spanSlope + spanIntercept);
-    std::cout << data_to_send << "\n";
+    //std::cout << data_to_send << "\n";
     serialWrite(1,command,data_to_send);
 }
 
@@ -1871,18 +1900,29 @@ void hsm_full::updateLCD(){
         Ydata = {};
         Xdata2 = {};
         Ydata2 = {};
+        XdataAct2 = {};
+        YdataAct2 = {};
         runaxlim = runaxlim+10;
         setlim = 0;
-        ui->qwtPlot->detachItems();
+    }
 
+    if (runtime_in_s>runaxlimLoad){
+        loadCellData1 = {};
+        loadCellData2 = {};
+        HystDisp1 = {};
+        HystDisp2 = {};
+        runaxlimLoad = runaxlimLoad+PLOTREFRESH;
     }
 
     if (sinOn ==0) {
         hsm_full::Xdata.append((double) runtime_in_s);
         //if ((received_Disp<totSpan) && (received_Disp>-totSpan)){
-            relative_Disp = received_Disp-zeroPoint_in;
-            hsm_full::Ydata.append((double) received_Disp);
-            last_recieved = received_Disp;
+        relative_Disp = received_Disp-zeroPoint_in;
+        hsm_full::Ydata.append((double) received_Disp);
+        hsm_full::loadCellData1.append(received_Force);
+        hsm_full::HystDisp1.append(received_Disp);
+        std::cout << received_Force << "\n";
+        last_recieved = received_Disp;
 
        // }
         /*else{
@@ -1893,8 +1933,11 @@ void hsm_full::updateLCD(){
         if (secondActuatorOn) {
             hsm_full::XdataAct2.append((double) runtime_in_s);
             if ((received_Disp2<totSpan) && (received_Disp2>-totSpan)){
+                readForce(1);
                 relative_Disp2 = received_Disp2-zeroPoint_in;
                 hsm_full::YdataAct2.append((double) relative_Disp2);
+                hsm_full::HystDisp2.append(relative_Disp2);
+                hsm_full::loadCellData2.append(received_Force2);
                 last_recieved2 = received_Disp2;
 
             }
@@ -1924,7 +1967,7 @@ void hsm_full::spanCommand(double targetSpan, double targetZero){
     int ampValue = 128;
     int zeroBit;
 
-    std::cout << (totSpan) << "\n";
+    //std::cout << (totSpan) << "\n";
     std::map<double,std::vector<double>>::iterator mapIter;
     int ampPrecision = 0;
     for (mapIter = spanCalMap.begin(); mapIter != spanCalMap.end(); mapIter ++) {
@@ -1933,7 +1976,7 @@ void hsm_full::spanCommand(double targetSpan, double targetZero){
                 ampPrecision = mapIter->second[2];
                 ampedSpan = mapIter -> second[4];
                 ampValue = mapIter -> first;
-                std::cout << "Amped Precision: " << ampPrecision << "\n";
+                //std::cout << "Amped Precision: " << ampPrecision << "\n";
             }
         }
     }
@@ -1941,22 +1984,22 @@ void hsm_full::spanCommand(double targetSpan, double targetZero){
         ampedSpan = spanCalMap.begin() -> second[4];
         ampValue = spanCalMap.begin() -> first;
     }
-    std::cout << "Amped Value: " << ampValue << "\n";
+    //std::cout << "Amped Value: " << ampValue << "\n";
     targetZero = targetZero - ampedSpan / 2;
-    std::cout << "target zero: " << targetZero << "\n";
+    //std::cout << "target zero: " << targetZero << "\n";
     zeroBit = inchesToBits(targetZero);
-    std::cout << "Bit zero: " << zeroBit << "\n";
+    //std::cout << "Bit zero: " << zeroBit << "\n";
     int sendZero = 0;
     for (int i = 0; i < zeroMap.size(); i++) {
-        std::cout << zeroMap.size() << "    "<< i << "\n";
+        //std::cout << zeroMap.size() << "    "<< i << "\n";
 
         if (abs(zeroMap[i][1] - zeroBit) < 5) {
-            std::cout << "test 1\n";
+            //std::cout << "test 1\n";
             sendZero = round(zeroMap[i][0]);
             zeroVol = zeroMap[i][1];
         }
     }
-    std::cout << "test 2\n";
+    //std::cout << "test 2\n";
     /*if (zeroVol < 0) {
         zeroVol = 0;
     }*/
@@ -1964,17 +2007,17 @@ void hsm_full::spanCommand(double targetSpan, double targetZero){
 
     //sendZero = 0;
     //zeroVol = 0;
-    std::cout << "test 3\n";
+    //std::cout << "test 3\n";
     serialWrite(1, 14, sendZero);
-    std::cout << "Send Zero: " << sendZero << "\n";
+    //std::cout << "Send Zero: " << sendZero << "\n";
     //std::cout <<"Span: " << ampedSpan << "   ampValue: " << ampValue << "\n";
     serialWrite(1 ,10 , ampValue);
     spanSlope = spanCalMap[ampValue][0];
     spanIntercept = spanCalMap[ampValue][1];
     spanMax = spanCalMap[ampValue][2];
     newSpan = ampedSpan;
-    std::cout << (ampValue) << "\n";
-    std::cout << "new Span: " << ampedSpan << "\n";
+    //std::cout << (ampValue) << "\n";
+    //std::cout << "new Span: " << ampedSpan << "\n";
     sendDouble(1, spanSlope);
     sendDouble(1, spanIntercept);
     sendDouble(1, diffGain);
@@ -1982,7 +2025,7 @@ void hsm_full::spanCommand(double targetSpan, double targetZero){
     for (int i = 0; i < origSlopes.size(); i++) {
         sendDouble(1,origSlopes[i]);
         sendDouble(1,origIntercepts[i]);
-        std::cout << origSlopes[i] << "    " << origIntercepts[i] << "\n";
+        //std::cout << origSlopes[i] << "    " << origIntercepts[i] << "\n";
     }
 
     /*span = ui->SpanInput->value();
@@ -2048,6 +2091,30 @@ void readForce(int channel){
         std::cout << "Channel must be 0 or 1 \n";
         SS = 10;
     }
+    bool tryAgain = true;
+
+    while (tryAgain == true) {
+        f1 = readFromADC(SS, channel);
+        f2 = readFromADC(SS, channel);
+        f3 = readFromADC(SS, channel);
+
+        if (abs(f1 - f2) < 500 && abs(f2 - f3) < 500 && abs(f3 - f1) < 500) {
+            tryAgain = false;
+        }
+    }
+
+    if (channel == 0) {
+        received_Force = (((f1 + f2 + f3) / 3) - loadCellZeroInBits) * loadCellSlope;
+    } else if (channel == 1) {
+        received_Force2 = (((f1 + f2 + f3) / 3) - loadCellZeroInBits) * loadCellSlope;
+    }
+
+    //qDebug("%d",loadCellSlope);
+}
+
+int readFromADC(int SS,int channel) {
+    int ADC = 10000;
+    while (ADC > 4090) {
     digitalWrite (SS, 0) ;
     buffer[0] = MCP3202_START; // Set output buffrt with MCP3202 configuration
     buffer[1] = MCP3202_CONFIG;
@@ -2056,11 +2123,9 @@ void readForce(int channel){
     wiringPiSPIDataRW(channel, buffer, MCP2002_BUFFER_SIZE); // Read and write buffer
 
     ADC = (buffer[2] | ((buffer[1] & 0x0F) << 8));
-    digitalWrite (SS, 1) ;
-    fprev = ADC;
-    received_Force = ADC;
-
-    //qDebug("%d",force_bits);
+    digitalWrite (SS, 1);
+    }
+    return ADC;
 }
 
 void readDisp(){
@@ -2485,6 +2550,8 @@ void hsm_full::serialWrite(int channel, int comm, int data) {
         sendChan = fd;
     } else if (channel == 2) {
         sendChan = fd2;
+    } else if (channel == 3) {
+        sendChan = fd3;
     } else {
         sendChan = fd;
     }
@@ -2516,9 +2583,9 @@ void hsm_full::sendDouble(int channel, double data) {
 
     myUnion myValue;
     myValue.dValue=data;
-    std::cout << myValue.iValue << "\n";
+    //std::cout << myValue.iValue << "\n";
     std::bitset<64> x(myValue.iValue);
-    std::cout << x << "\n";
+    //std::cout << x << "\n";
     int double1 = myValue.iValue >> 56 & 255;
     int double2 = myValue.iValue >> 48 & 255;
     int double3 = myValue.iValue >> 40 & 255;
@@ -2651,7 +2718,7 @@ double hsm_full::receivedToInches(int dataInBits) {
         dataInBits = spanIntercept;
     }*/
     //std::cout << spanIntercept << "    " << spanSlope << "\n";
-    std::cout << dataInBits << "\n";
+    //std::cout << dataInBits << "\n";
     dataInBits = (dataInBits - spanIntercept) / spanSlope;//((((dataInBits - spanIntercept) / spanSlope) - calIntercept) / calSlope * (1 / inchSlope)) / 1.057;
     dataInBits = (dataInBits * diffGain) + zeroVol;
 
@@ -2878,12 +2945,12 @@ void hsm_full::readAllFilesAndCalibrate() {
     for (int i = 0; i < potCalibration.size() - 1; i ++) {
         origSlopes.push_back((potTru[i + 1] - potTru[i]) / (potInches[i + 1] - potInches[i]));
         origIntercepts.push_back(potTru[i] - origSlopes[i] * potInches[i]);
-        std::cout << "Slope: " << origSlopes[i] << "    " << "Intercept: " << origIntercepts[i] << "\n";
+        //std::cout << "Slope: " << origSlopes[i] << "    " << "Intercept: " << origIntercepts[i] << "\n";
     }
     diffGain = potCalibration[10][0];
     totSpan = potCalibration[10][1];
     //totSpan = 11;
-    std::cout << "Diff Gain" << diffGain << "\n";
+    //std::cout << "Diff Gain" << diffGain << "\n";
     //calSlope = potCalibration[0][0];
     //calIntercept = potCalibration[0][1];
     //maxDiffValue = potCalibration[0][2];
@@ -2895,8 +2962,8 @@ void hsm_full::readAllFilesAndCalibrate() {
     //double minDiffInInch = (minDiffValue - calIntercept) / newCalSlope;
 
     spanCalibration = readCalibrationFiles("AmpCalibration.txt");
-    std::cout << "Hello " << minOGValue << "\n";
-    std::cout << maxOGValue << "\n";
+    //std::cout << "Hello " << minOGValue << "\n";
+    //std::cout << maxOGValue << "\n";
     for (int i = 0; i < spanCalibration.size(); i++) {
         std::vector<double> tempData;
         for (int j = 1; j < spanCalibration[i].size(); j++) {
@@ -2904,10 +2971,10 @@ void hsm_full::readAllFilesAndCalibrate() {
         }
         spanSlope = spanCalibration[i][1];
         spanIntercept = spanCalibration[i][2];
-        std::cout << "SpanTest: "<< spanCalibration[i][3] << "\n";
+        //std::cout << "SpanTest: "<< spanCalibration[i][3] << "\n";
         double spanInch = receivedToInches(spanCalibration[i][3]);
         tempData.push_back(spanInch);
-        std::cout << "Span: "<< spanInch << "\n";
+        //std::cout << "Span: "<< spanInch << "\n";
         spanCalMap.insert({spanCalibration[i][0], tempData});
         //inches = (dataInBits - spanIntercept - spanZeroPoint) / spanSlope;
     }
@@ -2928,4 +2995,19 @@ int initializeLoad() {
     wiringPiSPISetup(1, SPI_CLOCK); // Set SPI clock
     wiringPiSPISetup(0, SPI_CLOCK); // Set SPI clock
 
+}
+
+void hsm_full::calLoadCell(int channel, int value) {
+    serialWrite(3,channel + 1,value);
+}
+
+double hsm_full::returnLoad(int channel) {
+    readForce(channel);
+    double retForce;
+    if (channel == 0) {
+        retForce = received_Force;
+    } else {
+        retForce = received_Force2;
+    }
+    return retForce;
 }

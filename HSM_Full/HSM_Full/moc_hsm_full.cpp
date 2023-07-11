@@ -23,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_hsm_full_t {
-    QByteArrayData data[61];
-    char stringdata0[690];
+    QByteArrayData data[63];
+    char stringdata0[713];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -93,7 +93,9 @@ QT_MOC_LITERAL(56, 605, 17), // "turnOffHydraulics"
 QT_MOC_LITERAL(57, 623, 17), // "useSecondActuator"
 QT_MOC_LITERAL(58, 641, 16), // "Interlock_Window"
 QT_MOC_LITERAL(59, 658, 24), // "readAllFilesAndCalibrate"
-QT_MOC_LITERAL(60, 683, 6) // "update"
+QT_MOC_LITERAL(60, 683, 11), // "calLoadCell"
+QT_MOC_LITERAL(61, 695, 10), // "returnLoad"
+QT_MOC_LITERAL(62, 706, 6) // "update"
 
     },
     "hsm_full\0sendSignal\0\0value\0updatePlot\0"
@@ -115,7 +117,8 @@ QT_MOC_LITERAL(60, 683, 6) // "update"
     "turnOnLow1\0turnOnLow2\0turnOnHigh1\0"
     "turnOnHigh2\0turnOffHydraulics\0"
     "useSecondActuator\0Interlock_Window\0"
-    "readAllFilesAndCalibrate\0update"
+    "readAllFilesAndCalibrate\0calLoadCell\0"
+    "returnLoad\0update"
 };
 #undef QT_MOC_LITERAL
 
@@ -125,7 +128,7 @@ static const uint qt_meta_data_hsm_full[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      45,   14, // methods
+      47,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -133,53 +136,55 @@ static const uint qt_meta_data_hsm_full[] = {
        1,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,  239,    2, 0x06 /* Public */,
+       1,    1,  249,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-       4,    0,  242,    2, 0x0a /* Public */,
-       5,    0,  243,    2, 0x0a /* Public */,
-       6,    0,  244,    2, 0x0a /* Public */,
-       7,    0,  245,    2, 0x0a /* Public */,
-       8,    0,  246,    2, 0x0a /* Public */,
-       9,    0,  247,    2, 0x0a /* Public */,
-      10,    0,  248,    2, 0x0a /* Public */,
-      11,    0,  249,    2, 0x0a /* Public */,
-      12,    0,  250,    2, 0x0a /* Public */,
-      13,    0,  251,    2, 0x0a /* Public */,
-      14,    2,  252,    2, 0x0a /* Public */,
-      17,    0,  257,    2, 0x0a /* Public */,
-      18,    0,  258,    2, 0x0a /* Public */,
-      19,    0,  259,    2, 0x0a /* Public */,
-      20,    0,  260,    2, 0x0a /* Public */,
-      21,    0,  261,    2, 0x0a /* Public */,
-      22,    0,  262,    2, 0x0a /* Public */,
-      23,    0,  263,    2, 0x0a /* Public */,
-      24,    0,  264,    2, 0x0a /* Public */,
-      25,    0,  265,    2, 0x0a /* Public */,
-      26,    0,  266,    2, 0x0a /* Public */,
-      27,    0,  267,    2, 0x0a /* Public */,
-      28,    0,  268,    2, 0x0a /* Public */,
-      29,    0,  269,    2, 0x0a /* Public */,
-      30,    3,  270,    2, 0x0a /* Public */,
-      34,    3,  277,    2, 0x0a /* Public */,
-      35,    1,  284,    2, 0x0a /* Public */,
-      39,    2,  287,    2, 0x0a /* Public */,
-      43,    0,  292,    2, 0x0a /* Public */,
-      44,    0,  293,    2, 0x0a /* Public */,
-      45,    2,  294,    2, 0x0a /* Public */,
-      46,    0,  299,    2, 0x0a /* Public */,
-      47,    1,  300,    2, 0x0a /* Public */,
-      49,    1,  303,    2, 0x0a /* Public */,
-      51,    0,  306,    2, 0x0a /* Public */,
-      52,    0,  307,    2, 0x0a /* Public */,
-      53,    0,  308,    2, 0x0a /* Public */,
-      54,    0,  309,    2, 0x0a /* Public */,
-      55,    0,  310,    2, 0x0a /* Public */,
-      56,    0,  311,    2, 0x0a /* Public */,
-      57,    0,  312,    2, 0x0a /* Public */,
-      58,    0,  313,    2, 0x0a /* Public */,
-      59,    0,  314,    2, 0x0a /* Public */,
-      60,    0,  315,    2, 0x08 /* Private */,
+       4,    0,  252,    2, 0x0a /* Public */,
+       5,    0,  253,    2, 0x0a /* Public */,
+       6,    0,  254,    2, 0x0a /* Public */,
+       7,    0,  255,    2, 0x0a /* Public */,
+       8,    0,  256,    2, 0x0a /* Public */,
+       9,    0,  257,    2, 0x0a /* Public */,
+      10,    0,  258,    2, 0x0a /* Public */,
+      11,    0,  259,    2, 0x0a /* Public */,
+      12,    0,  260,    2, 0x0a /* Public */,
+      13,    0,  261,    2, 0x0a /* Public */,
+      14,    2,  262,    2, 0x0a /* Public */,
+      17,    0,  267,    2, 0x0a /* Public */,
+      18,    0,  268,    2, 0x0a /* Public */,
+      19,    0,  269,    2, 0x0a /* Public */,
+      20,    0,  270,    2, 0x0a /* Public */,
+      21,    0,  271,    2, 0x0a /* Public */,
+      22,    0,  272,    2, 0x0a /* Public */,
+      23,    0,  273,    2, 0x0a /* Public */,
+      24,    0,  274,    2, 0x0a /* Public */,
+      25,    0,  275,    2, 0x0a /* Public */,
+      26,    0,  276,    2, 0x0a /* Public */,
+      27,    0,  277,    2, 0x0a /* Public */,
+      28,    0,  278,    2, 0x0a /* Public */,
+      29,    0,  279,    2, 0x0a /* Public */,
+      30,    3,  280,    2, 0x0a /* Public */,
+      34,    3,  287,    2, 0x0a /* Public */,
+      35,    1,  294,    2, 0x0a /* Public */,
+      39,    2,  297,    2, 0x0a /* Public */,
+      43,    0,  302,    2, 0x0a /* Public */,
+      44,    0,  303,    2, 0x0a /* Public */,
+      45,    2,  304,    2, 0x0a /* Public */,
+      46,    0,  309,    2, 0x0a /* Public */,
+      47,    1,  310,    2, 0x0a /* Public */,
+      49,    1,  313,    2, 0x0a /* Public */,
+      51,    0,  316,    2, 0x0a /* Public */,
+      52,    0,  317,    2, 0x0a /* Public */,
+      53,    0,  318,    2, 0x0a /* Public */,
+      54,    0,  319,    2, 0x0a /* Public */,
+      55,    0,  320,    2, 0x0a /* Public */,
+      56,    0,  321,    2, 0x0a /* Public */,
+      57,    0,  322,    2, 0x0a /* Public */,
+      58,    0,  323,    2, 0x0a /* Public */,
+      59,    0,  324,    2, 0x0a /* Public */,
+      60,    2,  325,    2, 0x0a /* Public */,
+      61,    1,  330,    2, 0x0a /* Public */,
+      62,    0,  333,    2, 0x08 /* Private */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::Int,    3,
@@ -228,6 +233,8 @@ static const uint qt_meta_data_hsm_full[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
+    QMetaType::Void, QMetaType::Int, QMetaType::Int,   31,    3,
+    QMetaType::Double, QMetaType::Int,   31,
     QMetaType::Int,
 
        0        // eod
@@ -289,7 +296,10 @@ void hsm_full::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
         case 41: _t->useSecondActuator(); break;
         case 42: _t->Interlock_Window(); break;
         case 43: _t->readAllFilesAndCalibrate(); break;
-        case 44: { int _r = _t->update();
+        case 44: _t->calLoadCell((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
+        case 45: { double _r = _t->returnLoad((*reinterpret_cast< int(*)>(_a[1])));
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 46: { int _r = _t->update();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
         default: ;
         }
@@ -334,13 +344,13 @@ int hsm_full::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 45)
+        if (_id < 47)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 45;
+        _id -= 47;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 45)
+        if (_id < 47)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 45;
+        _id -= 47;
     }
     return _id;
 }
@@ -714,8 +724,8 @@ int CustomElement::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     return _id;
 }
 struct qt_meta_stringdata_SpanCalibration_t {
-    QByteArrayData data[11];
-    char stringdata0[101];
+    QByteArrayData data[12];
+    char stringdata0[109];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -734,12 +744,13 @@ QT_MOC_LITERAL(6, 60, 1), // "Y"
 QT_MOC_LITERAL(7, 62, 6), // "potCal"
 QT_MOC_LITERAL(8, 69, 14), // "activatePotCal"
 QT_MOC_LITERAL(9, 84, 9), // "BitToInch"
-QT_MOC_LITERAL(10, 94, 6) // "bitVal"
+QT_MOC_LITERAL(10, 94, 6), // "bitVal"
+QT_MOC_LITERAL(11, 101, 7) // "loadCal"
 
     },
     "SpanCalibration\0startCalibration\0\0"
     "plotCal\0QVector<double>\0X\0Y\0potCal\0"
-    "activatePotCal\0BitToInch\0bitVal"
+    "activatePotCal\0BitToInch\0bitVal\0loadCal"
 };
 #undef QT_MOC_LITERAL
 
@@ -749,7 +760,7 @@ static const uint qt_meta_data_SpanCalibration[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       5,   14, // methods
+       6,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -757,11 +768,12 @@ static const uint qt_meta_data_SpanCalibration[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   39,    2, 0x0a /* Public */,
-       3,    2,   40,    2, 0x0a /* Public */,
-       7,    0,   45,    2, 0x0a /* Public */,
-       8,    0,   46,    2, 0x0a /* Public */,
-       9,    1,   47,    2, 0x0a /* Public */,
+       1,    0,   44,    2, 0x0a /* Public */,
+       3,    2,   45,    2, 0x0a /* Public */,
+       7,    0,   50,    2, 0x0a /* Public */,
+       8,    0,   51,    2, 0x0a /* Public */,
+       9,    1,   52,    2, 0x0a /* Public */,
+      11,    0,   55,    2, 0x0a /* Public */,
 
  // slots: parameters
     QMetaType::Void,
@@ -769,6 +781,7 @@ static const uint qt_meta_data_SpanCalibration[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Double, QMetaType::Int,   10,
+    QMetaType::Void,
 
        0        // eod
 };
@@ -785,6 +798,7 @@ void SpanCalibration::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int 
         case 3: _t->activatePotCal(); break;
         case 4: { double _r = _t->BitToInch((*reinterpret_cast< int(*)>(_a[1])));
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 5: _t->loadCal(); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -831,13 +845,13 @@ int SpanCalibration::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 5)
+        if (_id < 6)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 5;
+        _id -= 6;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 5)
+        if (_id < 6)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 5;
+        _id -= 6;
     }
     return _id;
 }

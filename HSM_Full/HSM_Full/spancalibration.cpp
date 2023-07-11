@@ -17,7 +17,7 @@ std::ofstream spanCalibrationAllData;
 std::ofstream potCalibrationAllData;
 std::ofstream potCalibrationZeroData;
 int gainCounter = 0;
-QwtPlotCurve *curve1 = new QwtPlotCurve("Curve1");
+QwtPlotCurve *curve6 = new QwtPlotCurve("Curve6");
 int potCalCount = 0;
 double sumX = 0;
 double sumX2 = 0;
@@ -72,6 +72,7 @@ SpanCalibration::SpanCalibration(QMainWindow *parent, hsm_full *source) :
     //connect(ui5->PotCalButton, &QPushButton::released,this,&SpanCalibration::potCal);
     connect(ui5->PotCalButton, &QPushButton::released,this,&SpanCalibration::potCal);
     connect(ui5->activatePotCal, &QCheckBox::toggled,this,&SpanCalibration::activatePotCal);
+    connect(ui5->calibrateLoadCell, &QPushButton::released,this,&SpanCalibration::loadCal);
     //window->cl
     closeCallback = [&](){
         timer->start();
@@ -171,8 +172,8 @@ void SpanCalibration::startCalibration() {
 }
 
 void SpanCalibration::plotCal(QVector<double> X, QVector<double> Y) {
-    curve1->setSamples(X,Y);
-    curve1->attach(ui5->CalibrationPlot);
+    curve6->setSamples(X,Y);
+    curve6->attach(ui5->CalibrationPlot);
     ui5->CalibrationPlot->replot();
     QApplication::processEvents();
 }
@@ -330,6 +331,28 @@ void SpanCalibration::potCal() {
     ui5->curSpanDisplay->display(totSpan);
     //ui5->PotCalButton->setEnabled(true);
     ui5->SpanCalButton->setEnabled(true);
+}
+
+void SpanCalibration::loadCal() {
+    int channel = ui5->selectLoadCell->value();
+    int i = 0;
+    double forceReading = 10000000000;
+    while(abs(forceReading) > .05 && i < 4096) {
+        sourcefunction->calLoadCell(channel,i);
+        //delay(10);
+        forceReading = sourcefunction->returnLoad(channel);
+        QString newText = "DAC set to: " + QString::number(i) + ", Current Force Reading" + QString::number(forceReading);
+        ui5->Instructions->setText(newText);
+        QApplication::processEvents();
+        i ++;
+    }
+    if(i >= 4095) {
+        ui5->Instructions->setText("Load Cell not plugged in");
+    } else {
+        QString newText = "DAC set to: " + QString::number(i) + ", Current Force Reading" + QString::number(forceReading);
+        ui5->Instructions->setText(newText);
+    }
+
 }
 
 SpanCalibration::~SpanCalibration()

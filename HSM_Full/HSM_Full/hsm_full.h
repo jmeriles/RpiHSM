@@ -65,6 +65,10 @@ public:
     QVector<double> Ydata2;
     QVector<double> XdataAct2;
     QVector<double> YdataAct2;
+    QVector<double> loadCellData1;
+    QVector<double> loadCellData2;
+    QVector<double> HystDisp1;
+    QVector<double> HystDisp2;
     //QwtPlotDict plotdict;
     Ui::hsm_full *ui;
 
@@ -112,6 +116,8 @@ public slots:
     void useSecondActuator();
     void Interlock_Window();
     void readAllFilesAndCalibrate();
+    void calLoadCell(int channel,int value);
+    double returnLoad(int channel);
 
 signals:
     void sendSignal(int value);
@@ -217,6 +223,7 @@ public slots:
     void potCal();
     void activatePotCal();
     double BitToInch(int bitVal);
+    void loadCal();
 
 protected:
     inline void closeEvent(QCloseEvent *event) override
@@ -281,6 +288,8 @@ extern std::vector <double> origSlopes;
 extern std::vector <double> origIntercepts;
 extern std::vector <double> zeroData;
 extern double diffGain;
+extern double loadCellZeroInBits;
+extern double loadCellSlope;
 
 
 

@@ -16,6 +16,7 @@
 #include <QtWidgets/QLCDNumber>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTextBrowser>
 #include <QtWidgets/QWidget>
 #include "qwt_plot.h"
@@ -35,6 +36,9 @@ public:
     QLabel *label;
     QLabel *label_2;
     QCheckBox *activatePotCal;
+    QSpinBox *selectLoadCell;
+    QPushButton *calibrateLoadCell;
+    QLabel *label_3;
 
     void setupUi(QWidget *SpanCalibration)
     {
@@ -74,6 +78,15 @@ public:
         activatePotCal = new QCheckBox(SpanCalibration);
         activatePotCal->setObjectName(QString::fromUtf8("activatePotCal"));
         activatePotCal->setGeometry(QRect(110, 460, 111, 41));
+        selectLoadCell = new QSpinBox(SpanCalibration);
+        selectLoadCell->setObjectName(QString::fromUtf8("selectLoadCell"));
+        selectLoadCell->setGeometry(QRect(670, 400, 43, 24));
+        calibrateLoadCell = new QPushButton(SpanCalibration);
+        calibrateLoadCell->setObjectName(QString::fromUtf8("calibrateLoadCell"));
+        calibrateLoadCell->setGeometry(QRect(720, 400, 111, 23));
+        label_3 = new QLabel(SpanCalibration);
+        label_3->setObjectName(QString::fromUtf8("label_3"));
+        label_3->setGeometry(QRect(670, 380, 161, 16));
 
         retranslateUi(SpanCalibration);
 
@@ -89,6 +102,8 @@ public:
         label->setText(QCoreApplication::translate("SpanCalibration", "Target Inches", nullptr));
         label_2->setText(QCoreApplication::translate("SpanCalibration", "Current total span", nullptr));
         activatePotCal->setText(QCoreApplication::translate("SpanCalibration", "Activate Pot Cal", nullptr));
+        calibrateLoadCell->setText(QCoreApplication::translate("SpanCalibration", "Calibrate Load", nullptr));
+        label_3->setText(QCoreApplication::translate("SpanCalibration", "Select Load Cell", nullptr));
     } // retranslateUi
 
 };
