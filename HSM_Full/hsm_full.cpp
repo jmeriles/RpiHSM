@@ -47,7 +47,7 @@ PyObject *Pyfp;
 using namespace ABElectronics_CPP_Libraries;
 
 bool useADCs = false;
-bool hardwareConnected = true;
+bool hardwareConnected = false;
 std::ifstream EQ("/home/pi/Desktop/RpiHSM/HSM_Full/InterpGM.txt");
 double d_prev[3]; //This list stores the last 3 values for the displacement
 double d_next; //This is the next displacement calculated by the integrator
@@ -80,25 +80,50 @@ pthread_mutex_t race_mutex;
 pthread_cond_t trigger;//triggers the time integrator
 
 
-std::ofstream output;
-std::ofstream output2;
-std::ofstream output3;
+std::ofstream intDisp;
+std::ofstream intDisp2;
+std::ofstream forceResponse;
+std::ofstream forceResponse2;
+//std::ofstream output3;
 std::ofstream sentCom;
+std::ofstream sentCom2;
 std::ofstream recDisp;
+std::ofstream recDisp2;
 std::ofstream DispT;
 std::ofstream CommandT;
+std::ofstream DispT2;
+std::ofstream CommandT2;
+
 std::ofstream runningCommand;
+std::ofstream runningCommand2;
+std::ofstream runningForceCommand;
+std::ofstream runningForceCommand2;
 std::ofstream runningTime;
+std::ofstream runningTime2;
 std::ofstream runningFeedback;
+std::ofstream runningFeedback2;
+std::ofstream runningForce;
+std::ofstream runningForce2;
+
 std::ofstream controlLoops;
 std::ofstream signalLoopTime;
 std::ofstream integratorIndex;
 std::ofstream calcVelocity;
+std::ofstream calcVelocity2;
 std::ofstream calcAcc;
+std::ofstream calcAcc2;
 std::ofstream SinCommandFile;
+std::ofstream SinCommandFile2;
 std::ofstream SinResponseFile;
+std::ofstream SinResponseFile2;
 std::ofstream SinForceFile;
+std::ofstream SinForceFile2;
 std::ofstream SinTimeFile;
+std::ofstream SinTimeFile2;
+
+
+
+
 std::ofstream ForceSlopes;
 std::ofstream LCData;
 std::ofstream ScaleData;
@@ -117,9 +142,13 @@ std::vector<double> oof{0};
 std::vector<double> force{0};
 std::vector<double> sinWave{0};
 std::vector<double> sinCommand{0};
+std::vector<double> sinCommand2{0};
 std::vector<double> sinResponse{0};
+std::vector<double> sinResponse2{0};
 std::vector<double> sinForce{0};
+std::vector<double> sinForce2{0};
 std::vector<double> sinTime{0};
+std::vector<double> sinTime2{0};
 
 
 double xcur;
@@ -190,6 +219,7 @@ int received_data;
 double dispCommand =0.0;
 double forceCommand =0.0;
 double dispCommand2 =5.0;
+double forceCommand2 =0.0;
 double PCommand = .5;
 double ICommand = .0001;
 double DCommand = 0;
@@ -259,9 +289,17 @@ std::vector<double> CommandTimeAct2{0};
 std::vector<double> DispTimeAct2{0};
 std::vector<double> loops;
 std::vector<double> signalLoops;
+std::vector<double> signalLoops2;
 std::vector<double> runCommand(10000,0);
+std::vector<double> runForceCommand(10000,0);
 std::vector<double> runTime(10000,0);
 std::vector<double> runFeedback(10000,0);
+std::vector<double> runForce(10000,0);
+std::vector<double> runCommand2(10000,0);
+std::vector<double> runForceCommand2(10000,0);
+std::vector<double> runTime2(10000,0);
+std::vector<double> runFeedback2(10000,0);
+std::vector<double> runForce2(10000,0);
 std::vector<double> stiffnessvec;
 std::vector<double> stiffdispvec;
 std::vector<std::vector<double>> potCalibration;
@@ -340,6 +378,8 @@ QwtPlotCurve *curve3 = new QwtPlotCurve("Act 2 Rec Disp");
 QwtPlotCurve *curve4 = new QwtPlotCurve("Act 1 Hyst");
 QwtPlotCurve *curve5 = new QwtPlotCurve("Act 2 Hyst");
 QwtPlotCurve *curve10 = new QwtPlotCurve("Act 2 Comm");
+QwtPlotCurve *curve11 = new QwtPlotCurve("Act 1 Force Comm");
+QwtPlotCurve *curve12 = new QwtPlotCurve("Act 2 Force Comm");
 double maxDisp = 100000;
 double minDisp = -100000;
 double maxForce = 100000;
@@ -367,6 +407,10 @@ double actOneDispScale = 1.0;
 double actOneForceScale = 1.0;
 double actTwoDispScale = 1.0;
 double actTwoForceScale = 1.0;
+bool plotDispCommand1 = true;
+bool plotDispCommand2 = true;
+bool plotForceCommand1 = false;
+bool plotForceCommand2 = false;
 
 
 #define SPI_CLOCK 500000     // 1 MHz
@@ -534,7 +578,9 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
         }else{
 
             // Runs a sin wave command on target actuator (s)
-
+            int actuatorSelected = plot_obj->ui->selectAct->value();
+            double act1Command;
+            double act2Command;
             while (sinOn == 1 && running == 1) {
 
                 //gets time
@@ -549,28 +595,85 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
                 time_in_mill1 = tv.tv_usec;
                 time_in_s1 = tv.tv_sec + time_in_mill1/1000000.0-time_initial;
 
+                if(actuatorSelected == 1) {
+                    if(plot_obj->getControlType() == 0) {
+                        act1Command = (double) sinWave[i];
+                        data_to_send = (uint16_t) plot_obj->inchesToBits(1,act1Command);
+                        plot_obj->serialWrite(1,0,data_to_send);
+                    } else if (plot_obj->getControlType() == 1) {
+                        act1Command = (double) sinWave[i];
+                        data_to_send = act1Command / forceSlope + zeroForce;
+                        plot_obj->sendDouble(1,command,data_to_send);
+                    }
+                    if(plot_obj->getControlType2() == 0) {
+                        act2Command = plot_obj->getDispCommand2();
+                    } else if (plot_obj->getControlType() == 1) {
+                        act2Command = plot_obj->getForceCommand2();
+                    }
+                } else if (actuatorSelected == 2){
+                    if(plot_obj->getControlType() == 0) {
+                        act1Command = plot_obj->getDispCommand();
+                    } else if (plot_obj->getControlType() == 1) {
+                        act1Command = plot_obj->getForceCommand2();
+                    }
+                    if(plot_obj->getControlType2() == 0) {
+                        act2Command = (double) sinWave[i];
+                        data_to_send = (uint16_t) plot_obj->inchesToBits(2,act2Command);
+                        plot_obj->serialWrite(2,0,data_to_send);
+                    } else if (plot_obj->getControlType2() == 1) {
+                        act2Command = (double) sinWave[i];
+                        data_to_send = act2Command / forceSlope2 + zeroForce2;
+                        plot_obj->sendDouble(2,command,data_to_send);
+                    }
+                }
 
-                received_Disp = plot_obj->receivedToInches(1,(double)plot_obj->serialRead(1, 1, 0));
-                plot_obj->readForce(0);
 
 
-                pthread_mutex_lock(&race_mutex);
-                plot_obj->YCommand.append(plot_obj->getActOneDispScale() * (double) sinWave[i]);
-                plot_obj->XCommand.append((double) time_in_s1);
-                plot_obj->Xdata.append((double) time_in_s1);
-                plot_obj->Ydata.append(plot_obj->getActOneDispScale() * (double) received_Disp);
-                plot_obj->HystDisp1.append((double) time_in_s1);
-                plot_obj->loadCellData1.append(plot_obj->getActOneForceScale() * (double) received_Force);
 
+                if(firstActuatorOn){
+                    received_Disp = plot_obj->receivedToInches(1,(double)plot_obj->serialRead(1, 1, 0));
+                    plot_obj->readForce(0);
+                    pthread_mutex_lock(&race_mutex);
+                    if(plot_obj->getControlType() == 0){
+                        plot_obj->YCommand.append(plot_obj->getActOneDispScale() * act1Command);
+                        plot_obj->XCommand.append((double) time_in_s1);
+                    }
+                    if(plot_obj->getControlType() == 1){
+                        plot_obj->YForceCommand.append(plot_obj->getActOneForceScale() * act1Command);
+                        plot_obj->XForceCommand.append((double) time_in_s1);
+                    }
+                    plot_obj->Xdata.append((double) time_in_s1);
+                    plot_obj->Ydata.append(plot_obj->getActOneDispScale() * (double) received_Disp);
+                    plot_obj->HystDisp1.append((double) time_in_s1);
+                    plot_obj->loadCellData1.append(plot_obj->getActOneForceScale() * (double) received_Force);
+
+                    sinCommand.push_back(act1Command);
+                    sinResponse.push_back(received_Disp);
+                    sinForce.push_back(received_Force);
+                    sinTime.push_back((double) time_in_s1);
+                }
                 //maybe edit this to allow for two sin signals at once
                 if(secondActuatorOn) {
+                    plot_obj->readForce(1);
                     received_Disp2 = plot_obj->receivedToInches(2,(double)plot_obj->serialRead(2, 1, 0));
-                    plot_obj->YCommandAct2.append(plot_obj->getActTwoDispScale() * (double) sinWave[i]);
-                    plot_obj->XCommandAct2.append((double) time_in_s1);
+                    if(plot_obj->getControlType2() == 0){
+                        plot_obj->YCommandAct2.append(plot_obj->getActTwoDispScale() * act2Command);
+                        plot_obj->XCommandAct2.append((double) time_in_s1);
+                    }
+                    if(plot_obj->getControlType2() == 1){
+                        plot_obj->YForceCommandAct2.append(plot_obj->getActTwoForceScale() * act2Command);
+                        plot_obj->XForceCommandAct2.append((double) time_in_s1);
+                    }
                     plot_obj->XdataAct2.append((double) time_in_s1);
                     plot_obj->YdataAct2.append(plot_obj->getActTwoDispScale() * (double) received_Disp2);
                     plot_obj->HystDisp2.append((double) time_in_s1);
                     plot_obj->loadCellData2.append(plot_obj->getActTwoForceScale() * (double) received_Force2);
+
+                    sinCommand2.push_back(act2Command);
+                    std::cout << act2Command << "\n";
+                    sinResponse2.push_back(received_Disp2);
+                    sinForce2.push_back(received_Force2);
+                    sinTime2.push_back((double) time_in_s1);
                 }
                 pthread_mutex_unlock(&race_mutex);
 
@@ -590,14 +693,10 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
                 }*/
 
                 //sends command to actuator
-                data_to_send = (uint16_t) plot_obj->inchesToBits(1,sinWave[i]);
-                plot_obj->serialWrite(plot_obj->ui->selectAct->value(),0,data_to_send);
 
 
-                sinCommand.push_back(sinWave[i]);
-                sinResponse.push_back(received_Disp);
-                sinForce.push_back(-received_Force);
-                sinTime.push_back((double) time_in_s1);
+
+
 
 
 
@@ -1637,6 +1736,7 @@ void hsm_full::updatePlot()
     curve4->setPen(QColor(Qt::red));
     curve5->setPen(QColor(Qt::green));
     curve10->setPen(QColor(Qt::blue));
+    curve12->setPen(QColor(Qt::blue));
 
     if (legendPlotted == false) {
         QwtPlotLegendItem * legendItem1 = new QwtPlotLegendItem;
@@ -1656,14 +1756,26 @@ void hsm_full::updatePlot()
     curve4->setSamples(HystDisp1,loadCellData1);
     curve4->attach(ui->qwtPlot_2);
 
-    if(commandPlotting ==1){
+    if(CT1 == 0){
        //pthread_mutex_lock(&race_mutex);
        curve2->setSamples(XCommand,YCommand);
        //pthread_mutex_unlock(&race_mutex);
        curve2->attach(ui->qwtPlot);
+
+    }if(CT2 == 0) {
        curve10->setSamples(XCommandAct2,YCommandAct2);
        curve10->attach(ui->qwtPlot);
     }
+
+    if(CT1 == 1) {
+       curve11->setSamples(XForceCommand,YForceCommand);
+       curve11->attach(ui->qwtPlot_2);
+    }
+    if(CT2 == 1) {
+       curve12->setSamples(XForceCommandAct2,YForceCommandAct2);
+       curve12->attach(ui->qwtPlot_2);
+    }
+
     curve3->setSamples(XdataAct2,YdataAct2);
     curve3->attach(ui->qwtPlot);
     curve5->setSamples(HystDisp2,loadCellData2);
@@ -1772,82 +1884,162 @@ void hsm_full::save()
 {
 
     setvbuf (stdout, NULL, _IONBF, 0);
-    output.open("IntegratorDisp.txt",std::ofstream::out | std::ofstream::trunc);
+    intDisp.open("SaveData/IntegratorDisp.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Integrator Disp\n");
-            for(int i = 0 ; i<xn[0].size()+1; i++){
-                    output << xn[0][i] << "," << xn[1][i] << "\n";
-                    //printf("%d\n",i);
-            }
-            output.close();
-    output2.open("Force.txt",std::ofstream::out | std::ofstream::trunc);
+    for(int i = 0 ; i<xn[0].size()+1; i++){
+            intDisp << xn[0][i] << "," << xn[1][i] << "\n";
+            //printf("%d\n",i);
+    }
+    intDisp.close();
+
+    forceResponse.open("SaveData/Force.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving force\n");
-            for(int i = 0 ; i<force.size()+1; i++){
-                    output2 << force[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            output2.close();
+    for(int i = 0 ; i<force.size()+1; i++){
+            forceResponse << force[i] << "\n";
+            //printf("%d\n",i);
+    }
+    forceResponse.close();
 
-    sentCom.open("Command.txt",std::ofstream::out | std::ofstream::trunc);
+    sentCom.open("SaveData/Command.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Commands x\n");
-            for(int i = 0 ; i<CommandVec.size()+1; i++){
-                    sentCom << CommandVec[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            sentCom.close();
-    recDisp.open("recDisp.txt",std::ofstream::out | std::ofstream::trunc);
+    for(int i = 0 ; i<CommandVec.size()+1; i++){
+            sentCom << CommandVec[i] << "\n";
+            //printf("%d\n",i);
+    }
+    sentCom.close();
+
+    sentCom2.open("SaveData/Command2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Commands x\n");
+    for(int i = 0 ; i<CommandVecAct2.size()+1; i++){
+            sentCom2 << CommandVecAct2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    sentCom2.close();
+
+    recDisp.open("SaveData/recDisp.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Recieved Disp x\n");
-            for(int i = 0 ; i<DispVec.size()+1; i++){
-                    recDisp << DispVec[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            recDisp.close();
-    CommandT.open("CommandT.txt",std::ofstream::out | std::ofstream::trunc);
+    for(int i = 0 ; i<DispVec.size()+1; i++){
+            recDisp << DispVec[i] << "\n";
+            //printf("%d\n",i);
+    }
+    recDisp.close();
+
+    recDisp2.open("SaveData/recDisp2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Recieved Disp 2 x\n");
+    for(int i = 0 ; i<DispVecAct2.size()+1; i++){
+            recDisp2 << DispVecAct2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    recDisp2.close();
+
+
+    CommandT.open("SaveData/CommandT.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Command Time x\n");
-            for(int i = 0 ; i<CommandTime.size()+1; i++){
-                    CommandT << CommandTime[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            CommandT.close();
-    DispT.open("DispT.txt",std::ofstream::out | std::ofstream::trunc);
+    for(int i = 0 ; i<CommandTime.size()+1; i++){
+            CommandT << CommandTime[i] << "\n";
+            //printf("%d\n",i);
+    }
+    CommandT.close();
+
+    CommandT2.open("SaveData/CommandT2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Command Time x\n");
+    for(int i = 0 ; i<CommandTimeAct2.size()+1; i++){
+            CommandT2 << CommandTimeAct2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    CommandT2.close();
+
+    DispT.open("SaveData/DispT.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Recieved Disp Time x\n");
-            for(int i = 0 ; i<DispTime.size()+1; i++){
-                    DispT << DispTime[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            DispT.close();
-    runningCommand.open("runningCommand.txt",std::ofstream::out | std::ofstream::trunc);
+    for(int i = 0 ; i<DispTime.size()+1; i++){
+            DispT << DispTime[i] << "\n";
+            //printf("%d\n",i);
+    }
+    DispT.close();
+
+    DispT2.open("SaveData/DispT2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Recieved Disp Time 2 x\n");
+    for(int i = 0 ; i<DispTimeAct2.size()+1; i++){
+            DispT2 << DispTimeAct2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    DispT2.close();
+
+    runningCommand.open("SaveData/runningCommand.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Commands x\n");
-            for(int i = 0 ; i<runCommand.size()+1; i++){
-                    runningCommand << runCommand[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            runningCommand.close();
-    runningTime.open("runningTime.txt",std::ofstream::out | std::ofstream::trunc);
+    for(int i = 0 ; i<runCommand.size()+1; i++){
+            runningCommand << runCommand[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningCommand.close();
+
+    runningCommand2.open("SaveData/runningCommand2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Running Commands x\n");
+    for(int i = 0 ; i<runCommand2.size()+1; i++){
+            runningCommand2 << runCommand2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningCommand2.close();
+
+    runningForceCommand.open("SaveData/runningForceCommand.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Running Commands x\n");
+    for(int i = 0 ; i<runForceCommand.size()+1; i++){
+            runningForceCommand << runForceCommand[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningForceCommand.close();
+
+    runningForceCommand2.open("SaveData/runningForceCommand2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Running Commands x\n");
+    for(int i = 0 ; i<runForceCommand2.size()+1; i++){
+            runningForceCommand2 << runForceCommand2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningForceCommand2.close();
+
+    runningTime.open("SaveData/runningTime.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Time x\n");
-            for(int i = 0 ; i<runTime.size()+1; i++){
-                    runningTime << runTime[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            runningTime.close();
-    runningFeedback.open("runningFeedback.txt",std::ofstream::out | std::ofstream::trunc);
+    for(int i = 0 ; i<runTime.size()+1; i++){
+            runningTime << runTime[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningTime.close();
+
+    runningTime2.open("SaveData/runningTime2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Running Time x\n");
+    for(int i = 0 ; i<runTime2.size()+1; i++){
+            runningTime2 << runTime2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningTime2.close();
+
+    runningFeedback.open("SaveData/runningFeedback.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Disp Feedback x\n");
-            for(int i = 0 ; i<runFeedback.size()+1; i++){
-                    runningFeedback << runFeedback[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            runningFeedback.close();
+    for(int i = 0 ; i<runFeedback.size()+1; i++){
+            runningFeedback << runFeedback[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningFeedback.close();
 
-    if (xd.size()>1){
-        integratorIndex.open("integratorIndex.txt",std::ofstream::out | std::ofstream::trunc);
+    runningFeedback2.open("SaveData/runningFeedback2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Running Disp Feedback x\n");
+    for(int i = 0 ; i<runFeedback2.size()+1; i++){
+            runningFeedback2 << runFeedback2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningFeedback2.close();
+
+    if (xd[0].size()>1){
+        integratorIndex.open("SaveData/integratorIndex.txt",std::ofstream::out | std::ofstream::trunc);
         printf("Saving Integrator Index %d\n",intIndex.size());
-                for(int i = 0 ; i<intIndex.size()+1; i++){
-                        integratorIndex << intIndex[i] << "\n";
-                        //printf("%d\n",i);
-                }
-                integratorIndex.close();
+        for(int i = 0 ; i<intIndex.size()+1; i++){
+                integratorIndex << intIndex[i] << "\n";
+                //printf("%d\n",i);
+        }
+        integratorIndex.close();
 
 
-        calcVelocity.open("calcVelocity.txt",std::ofstream::out | std::ofstream::trunc);
+        calcVelocity.open("SaveData/calcVelocity.txt",std::ofstream::out | std::ofstream::trunc);
         printf("Saving Calculated Velocity\n");
                 for(int i = 0 ; i<xd[0].size()+1; i++){
                         calcVelocity << xd[0][i] << "," << xd[1][i] << "\n";
@@ -1855,58 +2047,91 @@ void hsm_full::save()
                 }
                 calcVelocity.close();
 
-        calcAcc.open("calcAcc.txt",std::ofstream::out | std::ofstream::trunc);
+        calcAcc.open("SaveData/calcAcc.txt",std::ofstream::out | std::ofstream::trunc);
         printf("Saving Calculated Acceleration\n");
-                for(int i = 0 ; i<xdd[0].size()+1; i++){
-                        calcAcc << xdd[0][i] << "," << xdd[1][i] << "\n";
-                        //printf("%d\n",i);
-                }
-                calcAcc.close();
+        for(int i = 0 ; i<xdd[0].size()+1; i++){
+                calcAcc << xdd[0][i] << "," << xdd[1][i] << "\n";
+                //printf("%d\n",i);
+        }
+        calcAcc.close();
     }
+
     qDebug("%d",sinCommand.size());
 
-    SinCommandFile.open("SinCommand.txt",std::ofstream::out | std::ofstream::trunc);
+    SinCommandFile.open("SaveData/SinCommand.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Commands\n");
-            for(int i = 0 ; i<sinCommand.size()+1; i++){
-                    SinCommandFile << sinCommand[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            SinCommandFile.close();
+    for(int i = 0 ; i<sinCommand.size()+1; i++){
+            SinCommandFile << sinCommand[i] << "\n";
+            //printf("%d\n",i);
+    }
+    SinCommandFile.close();
 
-    SinResponseFile.open("SinResponse.txt",std::ofstream::out | std::ofstream::trunc);
+    SinCommandFile2.open("SaveData/SinCommand2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Sin Commands\n");
+    for(int i = 0 ; i<sinCommand2.size()+1; i++){
+            SinCommandFile2 << sinCommand2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    SinCommandFile2.close();
+
+    SinResponseFile.open("SaveData/SinResponse.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Disp Response\n");
-            for(int i = 0 ; i<sinResponse.size()+1; i++){
-                    SinResponseFile << sinResponse[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            SinResponseFile.close();
+    for(int i = 0 ; i<sinResponse.size()+1; i++){
+            SinResponseFile << sinResponse[i] << "\n";
+            //printf("%d\n",i);
+    }
+    SinResponseFile.close();
 
-    SinForceFile.open("SinForce.txt",std::ofstream::out | std::ofstream::trunc);
+    SinResponseFile2.open("SaveData/SinResponse2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Sin Disp Response\n");
+    for(int i = 0 ; i<sinResponse2.size()+1; i++){
+            SinResponseFile2 << sinResponse2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    SinResponseFile2.close();
+
+    SinForceFile.open("SaveData/SinForce.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Force Response\n");
-            for(int i = 0 ; i<sinForce.size()+1; i++){
-                    SinForceFile << sinForce[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            SinForceFile.close();
+    for(int i = 0 ; i<sinForce.size()+1; i++){
+            SinForceFile << sinForce[i] << "\n";
+            //printf("%d\n",i);
+    }
+    SinForceFile.close();
 
-    SinTimeFile.open("SinTime.txt",std::ofstream::out | std::ofstream::trunc);
+    SinForceFile2.open("SaveData/SinForce2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Sin Force Response\n");
+    for(int i = 0 ; i<sinForce2.size()+1; i++){
+            SinForceFile2 << sinForce2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    SinForceFile2.close();
+
+    SinTimeFile.open("SaveData/SinTime.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Time\n");
-            for(int i = 0 ; i<sinTime.size()+1; i++){
-                    SinTimeFile << sinTime[i] << "\n";
-                    //printf("%d\n",i);
-            }
-            SinTimeFile.close();
+    for(int i = 0 ; i<sinTime.size()+1; i++){
+            SinTimeFile << sinTime[i] << "\n";
+            //printf("%d\n",i);
+    }
+    SinTimeFile.close();
+
+    SinTimeFile2.open("SaveData/SinTime2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Sin Time\n");
+    for(int i = 0 ; i<sinTime2.size()+1; i++){
+            SinTimeFile2 << sinTime2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    SinTimeFile2.close();
 
 
     if(logcontrolloops == 1){
-    controlLoops.open("controlLoops.txt",std::ofstream::out | std::ofstream::trunc);
+    controlLoops.open("SaveData/controlLoops.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving control Loops x\n");
             for(int i = 0 ; i<loops.size()+1; i++){
                     controlLoops << loops[i] << "\n";
                     //printf("%d\n",i);
             }
             controlLoops.close();
-    signalLoopTime.open("signalLoopTime.txt",std::ofstream::out | std::ofstream::trunc);
+    signalLoopTime.open("SaveData/signalLoopTime.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Signal Loop Time x\n");
             for(int i = 0 ; i<signalLoops.size()+1; i++){
                     signalLoopTime << signalLoops[i] << "\n";
@@ -1943,8 +2168,9 @@ void hsm_full::sendCommand(){
         std::cout << origSlopes[4] << "   " << origIntercepts[4] << "\n";
         serialWrite(1,command,data_to_send);
     } else if (CT1 ==1) {
-        forceCommand = (ui->CommandInput->value()) / forceSlope + zeroForce;
-        sendDouble(1,command,forceCommand);
+        forceCommand = ui->CommandInput->value();
+        data_to_send = forceCommand / forceSlope + zeroForce;
+        sendDouble(1,command,data_to_send);
         //data_to_send = (uint16_t) forceCommand;
         //serialWrite(1,command,data_to_send);
     }
@@ -2363,6 +2589,10 @@ void hsm_full::useSecondActuator() {
         ui->label_34->setEnabled(false);
         ui->label_35->setEnabled(false);
         ui->label_36->setEnabled(false);
+        ui->label_49->setEnabled(false);
+        ui->label_50->setEnabled(false);
+        ui->label_51->setEnabled(false);
+        ui->label_52->setEnabled(false);
         ui->ControlText_2->setEnabled(false);
         ui->SwitchControlButton_2->setEnabled(false);
         /*ui->LC2Button->setEnabled(false);
@@ -2371,6 +2601,8 @@ void hsm_full::useSecondActuator() {
         ui->LC2Int_2->setEnabled(false);
         ui->LC2SlopeInput->setEnabled(false);
         ui->LC2SlopeButton->setEnabled(false);*/
+        ui->minDispInput_2->setEnabled(false);
+        ui->maxDispInput_2->setEnabled(false);
 
     } else {
         SerialDisp = serialRead(2, 1, 0);
@@ -2424,6 +2656,10 @@ void hsm_full::useSecondActuator() {
         ui->label_34->setEnabled(true);
         ui->label_35->setEnabled(true);
         ui->label_36->setEnabled(true);
+        ui->label_49->setEnabled(true);
+        ui->label_50->setEnabled(true);
+        ui->label_51->setEnabled(true);
+        ui->label_52->setEnabled(true);
         ui->ControlText_2->setEnabled(true);
         ui->SwitchControlButton_2->setEnabled(true);
         /*ui->LC2Button->setEnabled(true);
@@ -2432,19 +2668,36 @@ void hsm_full::useSecondActuator() {
         ui->LC2Int_2->setEnabled(true);
         ui->LC2SlopeInput->setEnabled(true);
         ui->LC2SlopeButton->setEnabled(true);*/
+        ui->minDispInput_2->setEnabled(true);
+        ui->maxDispInput_2->setEnabled(true);
     }
 }
 
-// Actuator 1 Button Commands
+// Actuator 2 Button Commands
+
+
 void hsm_full::sendCommand2(){
     setvbuf (stdout, NULL, _IONBF, 0);
-    dispCommand2 = ui->CommandInput_2->value();
     //printf("%f",dispCommand);
     command = 0;
-    data_to_send2 = (uint16_t) ((dispCommand2 + newSpan2 / 2)  * spanSlope2 + spanIntercept2);
-    data_to_send2 = (uint16_t) inchesToBits(2,dispCommand2);
-    //std::cout << data_to_send << "\n";
-    serialWrite(2,command,data_to_send2);
+    std::cout << CT2 << "\n";
+    //data_to_send = (uint16_t) ((dispCommand + newSpan / 2)  * spanSlope + spanIntercept);
+    if (CT2 == 0) {
+        dispCommand2 = ui->CommandInput_2->value();
+        data_to_send = (uint16_t) inchesToBits(1,dispCommand2);
+        std::cout << data_to_send << "\n";
+        std::cout << receivedToInches(2,data_to_send) << "\n";
+        std::cout << spanSlope2 << "   " << spanIntercept2 << "  " << zeroVol2 << "   " << diffGain2 << "\n";
+        std::cout << origSlopes2[4] << "   " << origIntercepts2[4] << "\n";
+        serialWrite(1,command,data_to_send);
+    } else if (CT2 ==1) {
+        forceCommand2 = ui->CommandInput_2->value();
+        data_to_send = forceCommand2 / forceSlope2 + zeroForce2;
+        std::cout << forceCommand2 << "\n";
+        sendDouble(1,command,data_to_send);
+        //data_to_send = (uint16_t) forceCommand;
+        //serialWrite(1,command,data_to_send);
+    }
 }
 
 void hsm_full::sendPID2(){
@@ -2620,15 +2873,27 @@ void hsm_full::setLC2Slope() {
 
 void hsm_full::switchControlType2() {
     if (CT2 == 0) {
-        CT2 = 1;
-        ui->SwitchControlButton_2->setText("Switch to Disp Control");
-        ui->ControlText_2->setText("Force Control");
+        if((ui->minDispInput_2->value() != ui->maxDispInput_2->value()) and (received_Disp2 > ui->minDispInput_2->value() and received_Disp2 < ui->maxDispInput_2->value())){
+            CT2 = 1;
+            ui->SwitchControlButton_2->setText("Switch to Disp Control");
+            ui->ControlText_2->setText("Force Control");
+            std::cout << "Min Disp: " << ui->minDispInput_2->value() << "\n";
+            std::cout << "Max Disp: " << ui->maxDispInput_2->value() << "\n";
+            serialWrite(2,5,inchesToBits(2, ui->minDispInput_2->value()));
+            serialWrite(2,5,inchesToBits(2, ui->maxDispInput_2->value()));
+            std::cout << "Max Force: " << ui->Act2MaxLC->value() << "\n";
+            std::cout << "Force Slope: " << ui->Act2LCSlope->value() << "\n";
+            sendDouble(2,5,(double) ui->Act2MaxLC->value());
+            sendDouble(2,5,(double) ui->Act2LCSlope->value());
+        } else {
+            std::cout << "Error, Force control not set, check min maxes\n";
+        }
     } else if (CT2 == 1){
         CT2 = 0;
         ui->SwitchControlButton_2->setText("Switch to Force Control");
         ui->ControlText_2->setText("Disp Control");
+        serialWrite(2,5,0);
     }
-    serialWrite(2,5,0);
 }
 
 //
@@ -2646,12 +2911,13 @@ void hsm_full::updateLCD(){
     gettimeofday(&runtv, NULL);
     runtime_in_mill = runtv.tv_usec;
     runtime_in_s = runtv.tv_sec + runtime_in_mill/1000000.0-runtime_initial;
-    std::cout << dispCommand << "\n";
+    //std::cout << dispCommand << "\n";
     if (running == 0 and stiffOn == 0) {
 
         if(firstActuatorOn) {
             readForce(0);
             ui->Force->display(received_Force);
+
             ui->TrueForce->display(received_Force + zeroForce);
             ui->CurPos->display(received_Disp);
             ui->CommandNum->display(ui->horizontalSlider->value());
@@ -2660,8 +2926,14 @@ void hsm_full::updateLCD(){
             //SerialDisp = 0;
             received_Disp = receivedToInches(1,SerialDisp);
             //std::cout << received_Disp << "\n";
-            hsm_full::XCommand.append((double) runtime_in_s);
-            hsm_full::YCommand.append(actOneDispScale * (double) dispCommand);
+            if(CT1 == 0) {
+                hsm_full::XCommand.append((double) runtime_in_s);
+                hsm_full::YCommand.append(actOneDispScale * (double) dispCommand);
+            }
+            if(CT1 == 1) {
+                hsm_full::XForceCommand.append((double) runtime_in_s);
+                hsm_full::YForceCommand.append(actOneForceScale * (double) forceCommand);
+            }
             hsm_full::Xdata.append((double) runtime_in_s);
             //if ((received_Disp<totSpan) && (received_Disp>-totSpan)){
             hsm_full::Ydata.append(actOneDispScale * (double) received_Disp);
@@ -2669,8 +2941,17 @@ void hsm_full::updateLCD(){
             hsm_full::HystDisp1.append((double) runtime_in_s);
             //std::cout << received_Force << "\n";
             last_recieved = received_Disp;
+
+            runCommand.erase(runCommand.begin());
+            runCommand.push_back(dispCommand);
+            runForceCommand.erase(runForceCommand.begin());
+            runForceCommand.push_back(forceCommand);
             runFeedback.erase(runFeedback.begin());
             runFeedback.push_back(received_Disp);
+            runForce.erase(runForce.begin());
+            runForce.push_back(received_Force);
+            runTime.erase(runTime.begin());
+            runTime.push_back(runtime_in_s);
         }
 
 
@@ -2682,25 +2963,44 @@ void hsm_full::updateLCD(){
             hsm_full::YdataAct2.append(actTwoDispScale * (double) received_Disp2);
             hsm_full::HystDisp2.append((double) runtime_in_s);
             hsm_full::loadCellData2.append(actTwoForceScale * received_Force2);
-            hsm_full::XCommandAct2.append((double) runtime_in_s);
-            hsm_full::YCommandAct2.append(actTwoDispScale * (double) dispCommand2);
+            if(CT2 == 0) {
+                hsm_full::XCommandAct2.append((double) runtime_in_s);
+                hsm_full::YCommandAct2.append(actTwoDispScale * (double) dispCommand2);
+
+            }
+            if(CT2 == 1) {
+                hsm_full::XForceCommandAct2.append((double) runtime_in_s);
+                hsm_full::YForceCommandAct2.append(actTwoForceScale * (double) forceCommand2);
+            }
             last_recieved2 = received_Disp2;
             ui->Force_2->display(received_Force2);
             ui->TrueForce_2->display(received_Force2 + zeroForce2);
             ui->CurPos_2->display(received_Disp2);
             ui->CommandNum_2->display(ui->horizontalSlider_2->value());
+
+            runCommand2.erase(runCommand2.begin());
+            runCommand2.push_back(dispCommand2);
+            runForceCommand2.erase(runForceCommand2.begin());
+            runForceCommand2.push_back(forceCommand2);
+            runFeedback2.erase(runFeedback.begin());
+            runFeedback2.push_back(received_Disp2);
+            runForce2.erase(runForce.begin());
+            runForce2.push_back(received_Force2);
+            runTime2.erase(runTime.begin());
+            runTime2.push_back(runtime_in_s);
         }
-        runTime.erase(runTime.begin());
-        runTime.push_back(runtime_in_s);
-        runCommand.erase(runCommand.begin());
-        runCommand.push_back(dispCommand);
     }
 
 
     controlcount = controlcount+1;
 
     if(running == 1) {
-        runtime_in_s = Xdata.back();
+        if (firstActuatorOn) {
+            runtime_in_s = Xdata.back();
+        }
+        if (secondActuatorOn) {
+            runtime_in_s = XdataAct2.back();
+        }
         std::cout << runtime_in_s << "\n";
         std::cout << runaxlim << "\n";
     }
@@ -3085,11 +3385,21 @@ if (sinOn == 0){
     clearPlotVectors();
 
     sinOn =1;
-    signalLoops= {};
-    sinCommand = {};
-    sinTime = {};
-    sinResponse = {};
-    sinForce = {};
+
+    if(ui->selectAct->value() == 1){
+        signalLoops= {};
+        sinCommand = {};
+        sinTime = {};
+        sinResponse = {};
+        sinForce = {};
+    }
+    else if(ui->selectAct->value() == 2){
+        signalLoops2 = {};
+        sinCommand2 = {};
+        sinTime2 = {};
+        sinResponse2 = {};
+        sinForce2 = {};
+    }
     running = 1;
 
 
@@ -3220,11 +3530,18 @@ if (sinOn == 0){
         sinWave = {};
         runaxlim = 10;
         ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,runaxlim);
+        ui->qwtPlot_2->setAxisScale(QwtPlot::xBottom,0,runaxlimLoad);
     }
 }else{
     sinOn = 0;
     running = 0;
     runaxlim = 10;
+    timer->start();
+    ui->qwtPlot->setAxisAutoScale(QwtPlot::xBottom,true);
+    ui->qwtPlot->setAxisAutoScale(QwtPlot::yLeft,true);
+    sinWave = {};
+    ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,runaxlim);
+    ui->qwtPlot_2->setAxisScale(QwtPlot::xBottom,0,runaxlimLoad);
 }
 
 }
@@ -4036,12 +4353,16 @@ void hsm_full::clearPlotVectors() {
     dispCommand = 0;
     Xdata.clear();
     XCommand.clear();
+    XForceCommand.clear();
     Ydata.clear();
     YCommand.clear();
+    YForceCommand.clear();
     XdataAct2.clear();
     XCommandAct2.clear();
+    XForceCommandAct2.clear();
     YdataAct2.clear();
     YCommandAct2.clear();
+    YForceCommandAct2.clear();
     loadCellData1.clear();
     loadCellData2.clear();
     HystDisp1.clear();
@@ -4054,13 +4375,19 @@ void hsm_full::clearPlotVectors() {
     curve3->setData(NULL);
     curve4->setData(NULL);
     curve5->setData(NULL);
+    curve10->setData(NULL);
+    curve11->setData(NULL);
+    curve12->setData(NULL);
     curve1->attach(ui->qwtPlot);
     curve2->attach(ui->qwtPlot);
     curve3->attach(ui->qwtPlot);
     curve4->attach(ui->qwtPlot_2);
     curve5->attach(ui->qwtPlot_2);
     curve10->attach(ui->qwtPlot);
+    curve11->attach(ui->qwtPlot_2);
+    curve12->attach(ui->qwtPlot_2);
     ui->qwtPlot->setAxisAutoScale(QwtPlot::yLeft,true);
+    runaxlim = 10;
     ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,runaxlim);
     ui->qwtPlot->replot();
     ui->qwtPlot->repaint();
@@ -4304,4 +4631,22 @@ double hsm_full::getMinForce() {
 }
 double hsm_full::getMinForce2() {
     return minForce2;
+}
+double hsm_full::getDispCommand() {
+    return dispCommand;
+}
+double hsm_full::getDispCommand2() {
+    return dispCommand2;
+}
+double hsm_full::getForceCommand() {
+    return forceCommand;
+}
+double hsm_full::getForceCommand2() {
+    return forceCommand2;
+}
+int hsm_full::getControlType() {
+    return CT1;
+}
+int hsm_full::getControlType2() {
+    return CT2;
 }

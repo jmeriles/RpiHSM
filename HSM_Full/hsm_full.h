@@ -63,10 +63,14 @@ public:
     QVector<double> Ydata;
     QVector<double> XCommand;
     QVector<double> YCommand;
+    QVector<double> XForceCommand;
+    QVector<double> YForceCommand;
     QVector<double> XdataAct2;
     QVector<double> YdataAct2;
     QVector<double> XCommandAct2;
     QVector<double> YCommandAct2;
+    QVector<double> XForceCommandAct2;
+    QVector<double> YForceCommandAct2;
     QVector<double> loadCellData1;
     QVector<double> loadCellData2;
     QVector<double> HystDisp1;
@@ -178,6 +182,12 @@ public slots:
     double getMaxForce2();
     double getMinForce();
     double getMinForce2();
+    double getDispCommand();
+    double getDispCommand2();
+    int getControlType();
+    int getControlType2();
+    double getForceCommand();
+    double getForceCommand2();
 
 
 signals:
