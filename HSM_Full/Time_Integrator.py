@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from Model import Model
 from Element import Element
+from pprint import pprint
 
 def InitializeAlphaOS(myModel,el,GM):
     print("Check 1")
@@ -9,31 +10,24 @@ def InitializeAlphaOS(myModel,el,GM):
     print(myModel.M)
     print("Check 1")
     influence = []
-    myModel.mDOF = []
     print(myModel.K)
-    for i in range(len(el)):
-        if el[i].hybrid == 1:
-            print("Control DOF vector")
-            print(el[i].controlDOF);
-            controlDOF = np.nonzero(el[i].controlDOF)
-            for j in range(len(controlDOF[0])):
-                myModel.mDOF.append(np.nonzero(myModel.Trt[:,i*6+controlDOF[0][j]])[0])
+    
     if myModel.ModelSet[0]=='Planar':
         for i in range(len(myModel.FDOF)):
-            if (myModel.FDOF[i]+3) % 3 == 0 and myModel.DynOp[2][0]==1:
-                influence.append(1)
-            elif (myModel.FDOF[i]+3-1) % 3==0 and myModel.DynOp[2][1]==1:
-                influence.append(1)
+            if (myModel.FDOF[i]+3) % 3 == 0 and myModel.DynOp[2][0]!=0:
+                influence.append(myModel.DynOp[2][0])
+            elif (myModel.FDOF[i]+3-1) % 3==0 and myModel.DynOp[2][1]!=0:
+                influence.append(myModel.DynOp[2][1])
             else:
                 influence.append(0)
                 
     else:
         for i in range(len(myModel.FDOF)):
-            if (myModel.FDOF[i]+6) % 6 == 0 and myModel.DynOp[2][0]==1:
+            if (myModel.FDOF[i]+6) % 6 == 0 and myModel.DynOp[2][0]!=0:
                 influence.append(1)
-            elif (myModel.FDOF[i]+6-1) % 6==0 and myModel.DynOp[2][1]==1:
+            elif (myModel.FDOF[i]+6-1) % 6==0 and myModel.DynOp[2][1]!=0:
                 influence.append(1)
-            elif (myModel.FDOF[i]+6-2) % 6==0 and myModel.DynOp[2][2]==1:
+            elif (myModel.FDOF[i]+6-2) % 6==0 and myModel.DynOp[2][2]!=0:
                 influence.append(1)
             else:
                 influence.append(0)
@@ -85,17 +79,18 @@ def InitializeAlphaOS(myModel,el,GM):
     return (myModel, myModel.uddot[myModel.mDOF[0][0],0])
 
 def AlphaOS(myModel,meas_f,GM,i):
-    #print("Hello")
+    #print("running code")
+    i = i - 1
+    #print("Meas f is")
     #print(meas_f)
-    i = i-1
-    #print(i)
-
     A = GM[i]
-
+    ##print(A)
+    #print("Is Model Empty")
+    #print(myModel == None)
     dt = myModel.DynOp[1]
-
-    C=np.array(myModel.C)
-    #print(C)
+    #print(myModel.C)
+    
+    C=myModel.C
 
     K=np.array(myModel.K)
 
@@ -115,7 +110,11 @@ def AlphaOS(myModel,meas_f,GM,i):
     #print("PyCheck 7")
     P_m = np.zeros(len(myModel.FDOF))
     #print("PyCheck 8")
-    P_m[myModel.mDOF[0][0]] = meas_f
+    #print(myModel.mDOF)
+    for l in range(len(myModel.mDOF)):
+        P_m[myModel.mDOF[l][0]] = meas_f[myModel.mDOF[l][0]]
+        
+
     #print("PyCheck 9")
     P_old = np.copy(myModel.P_tot[:,i])
     #print("PyCheck 10")
@@ -139,7 +138,16 @@ def AlphaOS(myModel,meas_f,GM,i):
     myModel.u_pred[:,i+1] = myModel.u[:,i]+dt*myModel.udot[:,i+1]+(dt**2)*(1-2*myModel.Beta)*myModel.uddot[:,i+1]/2
     #print("PyCheck 17")
     #print(Model.u_pred[:,i+1])
-
-    
-    return (myModel,myModel.u_pred[myModel.mDOF[0][0],i+1],myModel.udot[myModel.mDOF[0][0],i+1],myModel.uddot[myModel.mDOF[0][0],i+1])
+    u_next = np.zeros(len(myModel.mDOF))
+    udot_next = np.zeros(len(myModel.mDOF))
+    uddot_next = np.zeros(len(myModel.mDOF))
+    for j in range(len(myModel.mDOF)):
+        #u_next[myModel.mDOF[j][0]] = (myModel.u_pred[myModel.mDOF[j][0],i+1])
+        #udot_next[myModel.mDOF[j][0]] = (myModel.udot[myModel.mDOF[j][0],i+1])
+        #uddot_next[myModel.mDOF[j][0]] = (myModel.uddot[myModel.mDOF[j][0],i+1])
+        u_next[j] = (myModel.u_pred[j,i+1])
+        udot_next[j] = (myModel.udot[j,i+1])
+        uddot_next[j] = (myModel.uddot[j,i+1])
+    #print(u_next[0])
+    return (myModel,np.array(u_next),np.array(udot_next),np.array(uddot_next))
 #Model.u_pred[Model.mDOF[0],i+1]

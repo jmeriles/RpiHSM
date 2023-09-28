@@ -9,33 +9,65 @@ import scipy.interpolate as sp
 import matplotlib.pyplot as plt
 from PlotHybridResults import PlotHybridResults
 
+
 NODE = np.array([[0,0,10],
                  [0,5,10]])
-
 CON = np.array([[1,2]])
 
 BC = np.array([[1,1,1],
                [0,0,0]])
+
 el_prop = np.array([[1,1000000000000,10000,0.0,1,0.0]])
 el_rel = np.array([[-1.0,-1.0,-1.0,-1.0,-1.0,-1.0]])
+
 customProps = -1
 el_load = np.array([[0,0,0,0,0,0]])
 
 node_load = np.array([[0,0,0,0,0,0],
                       [0,0,0,0,0,0]])
 
+"""
+                
+NODE = np.array([[0,0,10],
+                 [0,5,10],
+                 [-5,0,10],
+                 [5,0,10]])
+
+CON = np.array([[1,2],[3,2],[4,2]])
+
+BC = np.array([[1,1,1],
+               [0,0,0],
+               [1,1,0],
+               [1,1,0]])
+
+el_prop = np.array([[1,1000000000000,10000,0.0,1,0.0],
+                    [1,1000,10,0.0,0,0.0],
+                    [1,1000,10,0.0,0,0.0]])
+el_rel = np.array([[-1.0,-1.0,-1.0,-1.0,-1.0,-1.0],
+                   [-1.0,-1.0,-1.0,-1.0,-1.0,-1.0],
+                   [-1.0,-1.0,-1.0,-1.0,-1.0,-1.0]])
+customProps = -1
+el_load = np.array([[0,0,0,0,0,0],
+                    [0,0,0,0,0,0],
+                    [0,0,0,0,0,0]])
+
+node_load = np.array([[0,0,0,0,0,0],
+                      [0,0,0,0,0,0],
+                      [0,0,0,0,0,0],
+                      [0,0,0,0,0,0]])"""
+
 modelProp = np.array([0,0])
 
-dynOpt = np.array([1,0,0,9.66,.02,.01,0,.05,0,0])
+dynOpt = np.array([9.66,1,0,1,.02,.01,0,.05,0,0])
 
 hybridProps = np.array([[[ 0,0,0,0,0,0],
                     [ 0,0,0,0,0,0],
                     [ 0,0,0,0,0,0],
-                    [0,0,0,1.0e8,0,0],
+                    [0,0,0,1,0,0],
                     [ 0,0,0,0, 3.3, 0],
                     [ 0,0,0,0,0,0]]])
 
-controlProps = np.array([[0,0,0,0,1,0]])
+controlProps = np.array([[0,0,0,1,1,0]])
 
 if modelProp[0] == 0:
     dim = 'Planar'
@@ -117,6 +149,8 @@ myModel.CheckHybridEl(el)
 myModel.Eig()
 myModel.Create_C("Rayleigh",[dynOpt[7],int(dynOpt[8]),int(dynOpt[9])])
 
+plot=PlotModel()
+plot.Struct(myModel,el)
 
 Ground_Motion='El_Centro.txt'
 
@@ -149,13 +183,17 @@ GM = np.hstack((GM))
 time = np.arange(0,dt*(len(GM)),dt)
 
 (myModel,uddot0) = InitializeAlphaOS(myModel,el,GM)
+#print("MDOFS              ___________")
+#print(myModel.mDOF[0])
+#print(myModel.mDOF[1])
 uhist = [0]
 udothist = [0]
 uddothist = [uddot0]
 measfvec = []
-u_next = 0
+u_next = [0,0]
 for i in range(1,len(GM)-1):
-    meas_f = 3.3*u_next
+    meas_f = [.1*u_next[0],3.3*u_next[1]]
+    
     measfvec.append(meas_f)
     (myModel,u_next,udot,uddot) = AlphaOS(myModel,meas_f,GM,i)
     uhist.append(u_next)

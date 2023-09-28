@@ -247,6 +247,45 @@ class PlotModel:
                             ax.add_patch(circle1)
                             
             
+            #Plots Hybrid Dofs
+            if (Model.hybrid == 1):
+                for i in range(len(Model.DOF)):
+                    for j in range(len(Model.DOF[i])):
+                        #There is a discrepancy in my DOFS, making DOF vector be one indexed
+                        #and FDOF/BDOF be 0 indexed. I need to change this, but it might have
+                        #a bunch of repercussions...
+                        if (Model.DOF[i][j] - 1) in Model.hDOF:
+                            #Might want to simplify this to a draw arrow function 
+                            #with a color, label and direction
+                            HybridDof = np.where(np.array(Model.hDOF) == (Model.DOF[i][j] - 1))[0][0] + 1
+                            if j==0:
+                                Lx=np.linspace(0,maxL/10,2)+Model.NODE[i][0]
+                                Ly=np.zeros(2)+Model.NODE[i][1]
+                                
+                                plt.arrow(Lx[0],Ly[0],Lx[1]-Lx[0],Ly[1]-Ly[0],width=.025)
+                                ax.text(Lx[-1],Ly[-1],str('Hybrid DOF {:.0f}'.format(HybridDof)))
+                            
+                            if j==1:
+                                Lx=np.zeros(2)+Model.NODE[i][0]
+                                Ly=np.linspace(0,maxL/10,2)+Model.NODE[i][1]
+                                
+                                plt.arrow(Lx[0],Ly[0],Lx[1]-Lx[0],Ly[1]-Ly[0],width=.025)
+                                ax.text(Lx[-1],Ly[-1],str('Hybrid DOF {:.0f}'.format(HybridDof)))
+                           
+                            if j==2:
+    
+                                theta=np.linspace(0,1.9*np.pi,72)
+                                Lx=maxL/20*np.cos(theta)+Model.NODE[i][0]
+                                Ly=maxL/20*np.sin(theta)+Model.NODE[i][1]
+                                
+                                ax.plot(Lx,Ly, color='b',linewidth=.75)
+                                
+                                L_ax=[Lx[-2],Lx[-1]]
+                                L_ay=[Ly[-2],Ly[-1]]
+                                
+                                plt.arrow(L_ax[0],L_ay[0],L_ax[1]-L_ax[0],L_ay[1]-L_ay[0],width=.025)
+                                ax.text(Lx[-1],Ly[-1],str('Hybrid DOF {:.0f}'.format(HybridDof)))
+                
             #Plots nodal loads 
             for i in range(len(Model.NODE)):
                 for j in range(len(Model.LOAD[0])):
@@ -343,8 +382,31 @@ class PlotModel:
             xh=[]
             yh=[]
             zh=[]
-            maxL=0
+            maxX = 0
+            maxY = 0
+            maxZ = 0
+            minX = 0
+            minY = 0
+            minZ = 0
+            maxL = 0
             for i in range(Model.numel):
+                
+                #Determine outer bounds for plot scaling
+                if (max(el[i].node[0][0],el[i].node[1][0]) > maxX):
+                    maxX = max(el[i].node[0][0],el[i].node[1][0])
+                if (max(el[i].node[0][1],el[i].node[1][1]) > maxY):
+                    maxY = max(el[i].node[0][1],el[i].node[1][1])
+                if (max(el[i].node[0][2],el[i].node[1][2]) > maxZ):
+                    maxZ = max(el[i].node[0][2],el[i].node[1][2])
+                    
+                if (min(el[i].node[0][0],el[i].node[1][0]) < minX):
+                    minX = min(el[i].node[0][0],el[i].node[1][0])
+                if (min(el[i].node[0][1],el[i].node[1][1]) < minY):
+                    minY = min(el[i].node[0][1],el[i].node[1][1])
+                if (min(el[i].node[0][2],el[i].node[1][2]) < minZ):
+                    minZ = min(el[i].node[0][2],el[i].node[1][2])
+                    
+                    
                 if el[i].hybrid ==0:
                     x.append(el[i].node[0][0])
                     x.append(el[i].node[1][0])
@@ -397,8 +459,35 @@ class PlotModel:
             ax.set_ylabel('z axis')
             ax.set_zlabel('y axis')
             
-            # ax.set_xlim3d(-5,5)
-            # ax.set_ylim3d(-5,5)
+            
+            print("min x")
+            print(minX)
+            print("max x")
+            print(maxX)
+            print("min y")
+            print(minY)
+            print("max y")
+            print(maxY)
+            print("min Z")
+            print(minZ)
+            print("max Z")
+            print(maxZ)
+            if (maxX == 0 and minX == 0):
+                maxX = max(maxX,maxY,maxZ)
+                minX = min(minX,minY,minZ)
+            
+            if (maxY == 0 and minY == 0):
+                maxY = max(maxX,maxY,maxZ)
+                minY = min(minX,minY,minZ)
+            
+            if (maxZ == 0 and minZ == 0):
+                maxZ = max(maxX,maxY,maxZ)
+                minZ = min(minX,minY,minZ)
+                
+            
+            ax.set_xlim3d(1.1 * minX, 1.1 * maxX)
+            ax.set_ylim3d(1.1 * minZ, 1.1 * maxZ)
+            ax.set_zlim3d(1.1 * minY, 1.1 * maxY)
             
             
             #Find how many BCs we have and try to represent them in the plot
@@ -451,7 +540,96 @@ class PlotModel:
                             
                             ax.plot(BCx,BCz,BCy, color='r',linewidth=.75)
                     
-            
+            if (Model.hybrid == 1):
+                for i in range(len(Model.DOF)):
+                   for j in range(len(Model.DOF[i])):
+                       #There is a discrepancy in my DOFS, making DOF vector be one indexed
+                       #and FDOF/BDOF be 0 indexed. I need to change this, but it might have
+                       #a bunch of repercussions...
+                       
+                       if (Model.DOF[i][j] - 1) in Model.hDOF:
+                            HybridDof = np.where(np.array(Model.hDOF) == (Model.DOF[i][j] - 1))[0][0] + 1
+                            #Still could be simplified to a plot arrow function
+                            if j==0:
+                                Lx=np.linspace(0,maxL/10,2)+Model.NODE[i][0]
+                                Ly=np.zeros(2)+Model.NODE[i][1]
+                                Lz=np.zeros(2)+Model.NODE[i][2]
+                                
+                                a = Arrow3D(Lx,Lz,Ly,mutation_scale=5,\
+                                            lw=1, arrowstyle="-|>", color="b")
+                                ax.add_artist(a)
+                                ax.text(Lx[-1],Lz[-1],\
+                                        Ly[-1],str('Hybrid DOF {:.0f}'.format(HybridDof)))
+                            
+                            if j==1:
+                                Lx=np.zeros(2)+Model.NODE[i][0]
+                                Ly=np.linspace(0,maxL/10,2)+Model.NODE[i][1]
+                                Lz=np.zeros(2)+Model.NODE[i][2]
+                                
+                                a = Arrow3D(Lx,Lz,Ly,mutation_scale=5,\
+                                            lw=1, arrowstyle="-|>", color="b")
+                                ax.add_artist(a)
+                                ax.text(Lx[-1],Lz[-1],Ly[-1],str('Hybrid DOF {:.0f}'.format(HybridDof)))
+                            if j==2:
+                                Lx=np.zeros(2)+Model.NODE[i][0]
+                                Ly=np.zeros(2)+Model.NODE[i][1]
+                                Lz=np.linspace(0,maxL/10,2)+Model.NODE[i][2]
+                                
+                                a = Arrow3D(Lx,Lz,Ly,mutation_scale=5,\
+                                            lw=1, arrowstyle="-|>", color="b")
+                                ax.add_artist(a)
+                                ax.text(Lx[-1],Lz[-1],Ly[-1],str('Hybrid DOF {:.0f}'.format(HybridDof)))
+                            if j==3:
+                                theta=np.linspace(0,1.9*np.pi,72)
+                                Lx=np.zeros(72)+Model.NODE[i][0]
+                                Ly=maxL/20*np.sin(theta)+Model.NODE[i][1]
+                                Lz=maxL/20*np.cos(theta)+Model.NODE[i][2]
+                                
+                                ax.plot(Lx,Lz,Ly, color='b',linewidth=.75)
+                                
+                                L_ax=[Lx[-1],Lx[-1]]
+                                L_ay=[Ly[-2],Ly[-1]]
+                                L_az=[Lz[-2],Lz[-1]]
+                                a = Arrow3D(L_ax,L_az,L_ay,mutation_scale=5,\
+                                            lw=1, arrowstyle="-|>", color="b")
+                                ax.add_artist(a)
+                                ax.text(Lx[-1],Lz[-1],Ly[-1],str('Hybrid DOF {:.0f}'.format(HybridDof)))
+                            
+                            if j==4:
+                                theta=np.linspace(0,1.9*np.pi,72)
+                                
+                                Lx=maxL/20*np.cos(theta)+Model.NODE[i][0]
+                                Ly=np.zeros(72)+Model.NODE[i][1]
+                                Lz=maxL/20*np.sin(theta)+Model.NODE[i][2]
+                                
+                                ax.plot(Lx,Lz,Ly, color='b',linewidth=.75)
+                                
+                                L_ax=[Lx[-2],Lx[-1]]
+                                L_ay=[Ly[-1],Ly[-1]]
+                                L_az=[Lz[-2],Lz[-1]]
+                                a = Arrow3D(L_ax,L_az,L_ay,mutation_scale=5,\
+                                            lw=1, arrowstyle="-|>", color="b")
+                                ax.add_artist(a)
+                                ax.text(Lx[-1],Lz[-1],Ly[-1],str('Hybrid DOF {:.0f}'.format(HybridDof)))
+                                
+                                
+                            if j==5:
+                                theta=np.linspace(0,1.9*np.pi,72)
+                                
+                                Lx=maxL/20*np.cos(theta)+Model.NODE[i][0]
+                                Ly=maxL/20*np.sin(theta)+Model.NODE[i][1]
+                                Lz=np.zeros(72)+Model.NODE[i][2]
+                                
+                                ax.plot(Lx,Lz,Ly, color='b',linewidth=.75)
+                                
+                                L_ax=[Lx[-2],Lx[-1]]
+                                L_ay=[Ly[-2],Ly[-1]]
+                                L_az=[Lz[-1],Lz[-1]]
+                                a = Arrow3D(L_ax,L_az,L_ay,mutation_scale=5,\
+                                            lw=1, arrowstyle="-|>", color="b")
+                                ax.add_artist(a)
+                                ax.text(Lx[-1],Lz[-1],Ly[-1],str('Hybrid DOF {:.0f}'.format(HybridDof)))
+        
             #Plots nodal loads but needs a better way to annotate the loads
             for i in range(len(Model.NODE)):
                 for j in range(len(Model.LOAD[0])):
@@ -667,7 +845,9 @@ class PlotModel:
                         # else:
                         #     perp.append(0)
             plt.show()       
-            ax.set_ylim3d(-5,0)
+            
+            
+            
         elif Model.ModelSet[1] == 'FEA_Tri' :
             x=[]
             y=[]

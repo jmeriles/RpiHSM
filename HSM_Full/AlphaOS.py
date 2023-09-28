@@ -34,6 +34,7 @@ def AlphaOS(myModel,meas_f,GM,i):
     P_m = np.zeros(len(myModel.FDOF))
     print("PyCheck 8")
     P_m[myModel.mDOF[0][0]] = meas_f
+    #P_m[myModel.mDOF[0][1]] = meas_f[1]
     print("PyCheck 9")
     P_old = np.copy(myModel.P_tot[:,i])
     print("PyCheck 10")

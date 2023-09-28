@@ -176,6 +176,15 @@ public:
     QFrame *line_10;
     QLabel *label_48;
     QLabel *label_49;
+    QDoubleSpinBox *HybridDof1;
+    QDoubleSpinBox *HybridDof2;
+    QPlainTextEdit *ModelDisplay;
+    QLabel *label_50;
+    QLabel *label_51;
+    QLabel *label_52;
+    QLabel *label_53;
+    QLabel *label_54;
+    QPushButton *pickActuators;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
@@ -183,7 +192,7 @@ public:
     {
         if (PSAS->objectName().isEmpty())
             PSAS->setObjectName(QString::fromUtf8("PSAS"));
-        PSAS->resize(1280, 810);
+        PSAS->resize(1325, 843);
         actionGround_Motion = new QAction(PSAS);
         actionGround_Motion->setObjectName(QString::fromUtf8("actionGround_Motion"));
         centralwidget = new QWidget(PSAS);
@@ -735,12 +744,12 @@ public:
         line_5->setFrameShadow(QFrame::Sunken);
         line_6 = new QFrame(centralwidget);
         line_6->setObjectName(QString::fromUtf8("line_6"));
-        line_6->setGeometry(QRect(490, 590, 791, 21));
+        line_6->setGeometry(QRect(490, 590, 831, 21));
         line_6->setFrameShape(QFrame::HLine);
         line_6->setFrameShadow(QFrame::Sunken);
         line_7 = new QFrame(centralwidget);
         line_7->setObjectName(QString::fromUtf8("line_7"));
-        line_7->setGeometry(QRect(986, 600, 31, 171));
+        line_7->setGeometry(QRect(986, 600, 31, 211));
         line_7->setFrameShape(QFrame::VLine);
         line_7->setFrameShadow(QFrame::Sunken);
         line_8 = new QFrame(centralwidget);
@@ -764,10 +773,41 @@ public:
         label_49 = new QLabel(centralwidget);
         label_49->setObjectName(QString::fromUtf8("label_49"));
         label_49->setGeometry(QRect(20, 670, 71, 22));
+        HybridDof1 = new QDoubleSpinBox(centralwidget);
+        HybridDof1->setObjectName(QString::fromUtf8("HybridDof1"));
+        HybridDof1->setGeometry(QRect(1100, 730, 67, 31));
+        HybridDof1->setDecimals(0);
+        HybridDof1->setMaximum(15.000000000000000);
+        HybridDof2 = new QDoubleSpinBox(centralwidget);
+        HybridDof2->setObjectName(QString::fromUtf8("HybridDof2"));
+        HybridDof2->setGeometry(QRect(1190, 730, 67, 31));
+        HybridDof2->setDecimals(0);
+        HybridDof2->setMaximum(15.000000000000000);
+        ModelDisplay = new QPlainTextEdit(centralwidget);
+        ModelDisplay->setObjectName(QString::fromUtf8("ModelDisplay"));
+        ModelDisplay->setGeometry(QRect(1200, 630, 101, 31));
+        label_50 = new QLabel(centralwidget);
+        label_50->setObjectName(QString::fromUtf8("label_50"));
+        label_50->setGeometry(QRect(1100, 710, 51, 22));
+        label_51 = new QLabel(centralwidget);
+        label_51->setObjectName(QString::fromUtf8("label_51"));
+        label_51->setGeometry(QRect(1190, 710, 51, 22));
+        label_52 = new QLabel(centralwidget);
+        label_52->setObjectName(QString::fromUtf8("label_52"));
+        label_52->setGeometry(QRect(1030, 710, 51, 22));
+        label_53 = new QLabel(centralwidget);
+        label_53->setObjectName(QString::fromUtf8("label_53"));
+        label_53->setGeometry(QRect(1020, 730, 71, 22));
+        label_54 = new QLabel(centralwidget);
+        label_54->setObjectName(QString::fromUtf8("label_54"));
+        label_54->setGeometry(QRect(1010, 750, 71, 22));
+        pickActuators = new QPushButton(centralwidget);
+        pickActuators->setObjectName(QString::fromUtf8("pickActuators"));
+        pickActuators->setGeometry(QRect(1120, 770, 111, 30));
         PSAS->setCentralWidget(centralwidget);
         menubar = new QMenuBar(PSAS);
         menubar->setObjectName(QString::fromUtf8("menubar"));
-        menubar->setGeometry(QRect(0, 0, 1280, 27));
+        menubar->setGeometry(QRect(0, 0, 1325, 20));
         PSAS->setMenuBar(menubar);
         statusbar = new QStatusBar(PSAS);
         statusbar->setObjectName(QString::fromUtf8("statusbar"));
@@ -849,6 +889,12 @@ public:
         CustomCheck->setText(QCoreApplication::translate("PSAS", "Custom", nullptr));
         label_48->setText(QCoreApplication::translate("PSAS", "i Node", nullptr));
         label_49->setText(QCoreApplication::translate("PSAS", "j Node", nullptr));
+        label_50->setText(QCoreApplication::translate("PSAS", "hDOF 1", nullptr));
+        label_51->setText(QCoreApplication::translate("PSAS", "hDOF 2", nullptr));
+        label_52->setText(QCoreApplication::translate("PSAS", "Pick", nullptr));
+        label_53->setText(QCoreApplication::translate("PSAS", "Actuator", nullptr));
+        label_54->setText(QCoreApplication::translate("PSAS", "(1 indexed)", nullptr));
+        pickActuators->setText(QCoreApplication::translate("PSAS", "Pick Actuators", nullptr));
     } // retranslateUi
 
 };

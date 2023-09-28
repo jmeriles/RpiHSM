@@ -208,8 +208,10 @@ class Model:
                      el[i].me=el[i].rho*(el[i].A*np.matmul(np.transpose(el[i].Nu),\
                             el[i].Nu)+np.matmul(np.transpose(el[i].Nt),\
                             np.matmul(Jmat,el[i].Nt)))
+                                                
+                        
                  else:
-                     if el[i].hybrid == 0:
+                     if el[i].hybrid == 0 and el[i].custom == 0:
                          el[i].ke=np.matrix([[E*A/L,0,0,0,0,0],\
                                              [0,G*J/L,0,0,0,0],\
                                              [0,0,4*E*Iy/L,2*E*Iy/L,0,0],\
@@ -223,21 +225,15 @@ class Model:
                                              [0,0,0,0,L/(3*E*Iz),-L/(6*E*Iz)],\
                                              [0,0,0,0,-L/(6*E*Iz),L/(3*E*Iz)]])
                      else:
-                         el[i].ke=np.matrix([[0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0]])
-                         el[i].fe=np.matrix([[0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0],\
-                                             [0,0,0,0,0,0]])
+
                          self.hybrid = 1
                          
+                         #Mass matrix for hybrid element. Should it just be 0? We are assuming so
+                         #Any mass effects must be captured either at nodes or from specimen
                          
+                         el[i].J = 0
+                         el[i].Iy = 0
+                         el[i].Iz = 0
                          
                          eldofs = np.hstack([self.DOF[el[i].CON[0]-1],self.DOF[el[i].CON[1]-1]])
                          self.hybridDOFS.append(eldofs)
@@ -336,6 +332,7 @@ class Model:
                                 self.Ks_hybrid[g+i][g+j] = el[n].ke[i,j]
                         # Fs[g+i][g+j]=el[n].fe[i][j]
                 g=g+j+1;
+            
                          
         elif self.ModelSet[1] == 'FEA_Tri':
             
@@ -950,9 +947,21 @@ class Model:
         self.Create_K()
         K = self.K
         hcount = 0
+        self.mDOF = []
+        
         for i in range(len(el)):
             if el[i].hybrid == 1:
                 boun = np.hstack(el[i].BOUN)
+                if el[i].hybrid == 1:
+                    print("Control DOF vector")
+                    print(el[i].controlDOF);
+                    controlDOF = np.nonzero(el[i].controlDOF)
+                    for j in range(len(controlDOF[0])):
+                        if self.ModelSet[0] == 'Planar':
+                            self.mDOF.append(np.nonzero(self.Trt[:,i*6+controlDOF[0][j]])[0])
+                        elif self.ModelSet[0] == '3D':
+                            self.mDOF.append(np.nonzero(self.Trt[:,i*12+controlDOF[0][j]])[0])
+                
                 if self.ModelSet[0] == 'Planar':
                     for cdof in range(len(el[i].controlDOF)):            
                         if el[i].controlDOF[cdof] == 0:
@@ -992,6 +1001,15 @@ class Model:
                                 print("Unknown Error, Model will not work as built")
 
                 hcount+=1
+                
+        #This adds the "Hybrid DOFs" to a vector hDOF. The MDOF vector defines the indices in
+        #the stiffness matrix and load vector. The hDOF vector specifies which DOFS are hybrid
+        #If actuator is at an incline or not directly controlling a DOF, this does not work
+        #more sophisticated methods will be required. I propose an "Actuator" Element that
+        #maps global dofs to actuator local dofs, but I did not have time to implement
+        self.hDOF = []
+        for i in range(len(self.mDOF)):
+            self.hDOF.append(self.FDOF[self.mDOF[i][0]])
                             
                             
             

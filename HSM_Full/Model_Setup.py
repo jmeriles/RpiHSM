@@ -4,6 +4,7 @@ from Model import Model
 from PlotModel import PlotModel
 from Analyze import Analyze
 from GMread import GMread
+import pickle as pkl
 
 
 def Model_Setup(NODE,CON,BC,el_prop,el_rel,customProps,el_load,node_load,modelProp,dynOpt=None,hybridProps=None,controlProps=None):
@@ -122,5 +123,20 @@ def Model_Setup(NODE,CON,BC,el_prop,el_rel,customProps,el_load,node_load,modelPr
     myModel.CheckHybridEl(el)
     myModel.Eig()
     myModel.Create_C("Rayleigh",[dynOpt[7],int(dynOpt[8]),int(dynOpt[9])])
+    
+    ModelDictionary = {'Model': myModel,'el': el}
+    file = open('ModelFile.dat', 'w+b')
+    pkl.dump(ModelDictionary,file)
+    file.close()
+    
     return (myModel,el)
+
+def modelLoad(PickleFileName):
+    print(PickleFileName)
+    file = open(PickleFileName,'rb')
+    ModelDictionary = pkl.load(file)
+    file.close()
+    Model = ModelDictionary['Model']
+    el = ModelDictionary['el']
+    return (Model, el)
 
