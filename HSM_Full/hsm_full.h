@@ -171,6 +171,7 @@ public slots:
     void clearPlotVectors();
     int readAck(int channel);
     int loadModel();
+    int saveModel();
     void loadActuators();
     double getForce();
     double getForce2();

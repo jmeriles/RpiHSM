@@ -23,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_hsm_full_t {
-    QByteArrayData data[112];
-    char stringdata0[1394];
+    QByteArrayData data[113];
+    char stringdata0[1404];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -127,24 +127,25 @@ QT_MOC_LITERAL(90, 1114, 13), // "isInterlockOn"
 QT_MOC_LITERAL(91, 1128, 16), // "clearPlotVectors"
 QT_MOC_LITERAL(92, 1145, 7), // "readAck"
 QT_MOC_LITERAL(93, 1153, 9), // "loadModel"
-QT_MOC_LITERAL(94, 1163, 13), // "loadActuators"
-QT_MOC_LITERAL(95, 1177, 8), // "getForce"
-QT_MOC_LITERAL(96, 1186, 9), // "getForce2"
-QT_MOC_LITERAL(97, 1196, 10), // "getMaxSpan"
-QT_MOC_LITERAL(98, 1207, 11), // "getMaxSpan2"
-QT_MOC_LITERAL(99, 1219, 10), // "getMinSpan"
-QT_MOC_LITERAL(100, 1230, 11), // "getMinSpan2"
-QT_MOC_LITERAL(101, 1242, 11), // "getMaxForce"
-QT_MOC_LITERAL(102, 1254, 12), // "getMaxForce2"
-QT_MOC_LITERAL(103, 1267, 11), // "getMinForce"
-QT_MOC_LITERAL(104, 1279, 12), // "getMinForce2"
-QT_MOC_LITERAL(105, 1292, 14), // "getDispCommand"
-QT_MOC_LITERAL(106, 1307, 15), // "getDispCommand2"
-QT_MOC_LITERAL(107, 1323, 14), // "getControlType"
-QT_MOC_LITERAL(108, 1338, 15), // "getControlType2"
-QT_MOC_LITERAL(109, 1354, 15), // "getForceCommand"
-QT_MOC_LITERAL(110, 1370, 16), // "getForceCommand2"
-QT_MOC_LITERAL(111, 1387, 6) // "update"
+QT_MOC_LITERAL(94, 1163, 9), // "saveModel"
+QT_MOC_LITERAL(95, 1173, 13), // "loadActuators"
+QT_MOC_LITERAL(96, 1187, 8), // "getForce"
+QT_MOC_LITERAL(97, 1196, 9), // "getForce2"
+QT_MOC_LITERAL(98, 1206, 10), // "getMaxSpan"
+QT_MOC_LITERAL(99, 1217, 11), // "getMaxSpan2"
+QT_MOC_LITERAL(100, 1229, 10), // "getMinSpan"
+QT_MOC_LITERAL(101, 1240, 11), // "getMinSpan2"
+QT_MOC_LITERAL(102, 1252, 11), // "getMaxForce"
+QT_MOC_LITERAL(103, 1264, 12), // "getMaxForce2"
+QT_MOC_LITERAL(104, 1277, 11), // "getMinForce"
+QT_MOC_LITERAL(105, 1289, 12), // "getMinForce2"
+QT_MOC_LITERAL(106, 1302, 14), // "getDispCommand"
+QT_MOC_LITERAL(107, 1317, 15), // "getDispCommand2"
+QT_MOC_LITERAL(108, 1333, 14), // "getControlType"
+QT_MOC_LITERAL(109, 1348, 15), // "getControlType2"
+QT_MOC_LITERAL(110, 1364, 15), // "getForceCommand"
+QT_MOC_LITERAL(111, 1380, 16), // "getForceCommand2"
+QT_MOC_LITERAL(112, 1397, 6) // "update"
 
     },
     "hsm_full\0sendSignal\0\0value\0updatePlot\0"
@@ -180,13 +181,14 @@ QT_MOC_LITERAL(111, 1387, 6) // "update"
     "checkInterlock\0resetInterlock\0"
     "whichInterlock\0isInterlockOn\0"
     "clearPlotVectors\0readAck\0loadModel\0"
-    "loadActuators\0getForce\0getForce2\0"
-    "getMaxSpan\0getMaxSpan2\0getMinSpan\0"
-    "getMinSpan2\0getMaxForce\0getMaxForce2\0"
-    "getMinForce\0getMinForce2\0getDispCommand\0"
-    "getDispCommand2\0getControlType\0"
-    "getControlType2\0getForceCommand\0"
-    "getForceCommand2\0update"
+    "saveModel\0loadActuators\0getForce\0"
+    "getForce2\0getMaxSpan\0getMaxSpan2\0"
+    "getMinSpan\0getMinSpan2\0getMaxForce\0"
+    "getMaxForce2\0getMinForce\0getMinForce2\0"
+    "getDispCommand\0getDispCommand2\0"
+    "getControlType\0getControlType2\0"
+    "getForceCommand\0getForceCommand2\0"
+    "update"
 };
 #undef QT_MOC_LITERAL
 
@@ -196,7 +198,7 @@ static const uint qt_meta_data_hsm_full[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      93,   14, // methods
+      94,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -204,101 +206,102 @@ static const uint qt_meta_data_hsm_full[] = {
        1,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,  479,    2, 0x06 /* Public */,
+       1,    1,  484,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-       4,    0,  482,    2, 0x0a /* Public */,
-       5,    0,  483,    2, 0x0a /* Public */,
-       6,    0,  484,    2, 0x0a /* Public */,
-       7,    1,  485,    2, 0x0a /* Public */,
-       9,    0,  488,    2, 0x0a /* Public */,
-      10,    0,  489,    2, 0x0a /* Public */,
-      11,    0,  490,    2, 0x0a /* Public */,
-      12,    0,  491,    2, 0x0a /* Public */,
-      13,    0,  492,    2, 0x0a /* Public */,
-      14,    0,  493,    2, 0x0a /* Public */,
-      15,    0,  494,    2, 0x0a /* Public */,
-      16,    0,  495,    2, 0x0a /* Public */,
-      17,    0,  496,    2, 0x0a /* Public */,
-      18,    0,  497,    2, 0x0a /* Public */,
-      19,    0,  498,    2, 0x0a /* Public */,
-      20,    0,  499,    2, 0x0a /* Public */,
-      21,    0,  500,    2, 0x0a /* Public */,
-      22,    0,  501,    2, 0x0a /* Public */,
-      23,    0,  502,    2, 0x0a /* Public */,
-      24,    0,  503,    2, 0x0a /* Public */,
-      25,    0,  504,    2, 0x0a /* Public */,
-      26,    0,  505,    2, 0x0a /* Public */,
-      27,    0,  506,    2, 0x0a /* Public */,
-      28,    0,  507,    2, 0x0a /* Public */,
-      29,    0,  508,    2, 0x0a /* Public */,
-      30,    0,  509,    2, 0x0a /* Public */,
-      31,    0,  510,    2, 0x0a /* Public */,
-      32,    0,  511,    2, 0x0a /* Public */,
-      33,    0,  512,    2, 0x0a /* Public */,
-      34,    0,  513,    2, 0x0a /* Public */,
-      35,    0,  514,    2, 0x0a /* Public */,
-      36,    0,  515,    2, 0x0a /* Public */,
-      37,    0,  516,    2, 0x0a /* Public */,
-      38,    0,  517,    2, 0x0a /* Public */,
-      39,    0,  518,    2, 0x0a /* Public */,
-      40,    0,  519,    2, 0x0a /* Public */,
-      41,    0,  520,    2, 0x0a /* Public */,
-      42,    0,  521,    2, 0x0a /* Public */,
-      43,    0,  522,    2, 0x0a /* Public */,
-      44,    0,  523,    2, 0x0a /* Public */,
-      45,    1,  524,    2, 0x0a /* Public */,
-      46,    0,  527,    2, 0x0a /* Public */,
-      47,    0,  528,    2, 0x0a /* Public */,
-      48,    3,  529,    2, 0x0a /* Public */,
-      51,    0,  536,    2, 0x0a /* Public */,
-      52,    0,  537,    2, 0x0a /* Public */,
-      53,    0,  538,    2, 0x0a /* Public */,
-      54,    0,  539,    2, 0x0a /* Public */,
-      55,    0,  540,    2, 0x0a /* Public */,
-      56,    0,  541,    2, 0x0a /* Public */,
-      57,    0,  542,    2, 0x0a /* Public */,
-      58,    0,  543,    2, 0x0a /* Public */,
-      59,    0,  544,    2, 0x0a /* Public */,
-      60,    3,  545,    2, 0x0a /* Public */,
-      63,    3,  552,    2, 0x0a /* Public */,
-      64,    1,  559,    2, 0x0a /* Public */,
-      68,    2,  562,    2, 0x0a /* Public */,
-      72,    3,  567,    2, 0x0a /* Public */,
-      73,    2,  574,    2, 0x0a /* Public */,
-      75,    2,  579,    2, 0x0a /* Public */,
-      77,    0,  584,    2, 0x0a /* Public */,
-      78,    0,  585,    2, 0x0a /* Public */,
-      79,    2,  586,    2, 0x0a /* Public */,
-      80,    1,  591,    2, 0x0a /* Public */,
-      81,    2,  594,    2, 0x0a /* Public */,
-      83,    2,  599,    2, 0x0a /* Public */,
-      84,    2,  604,    2, 0x0a /* Public */,
-      86,    2,  609,    2, 0x0a /* Public */,
-      87,    0,  614,    2, 0x0a /* Public */,
-      88,    2,  615,    2, 0x0a /* Public */,
-      90,    2,  620,    2, 0x0a /* Public */,
-      91,    0,  625,    2, 0x0a /* Public */,
-      92,    1,  626,    2, 0x0a /* Public */,
-      93,    0,  629,    2, 0x0a /* Public */,
-      94,    0,  630,    2, 0x0a /* Public */,
-      95,    0,  631,    2, 0x0a /* Public */,
-      96,    0,  632,    2, 0x0a /* Public */,
-      97,    0,  633,    2, 0x0a /* Public */,
-      98,    0,  634,    2, 0x0a /* Public */,
-      99,    0,  635,    2, 0x0a /* Public */,
-     100,    0,  636,    2, 0x0a /* Public */,
-     101,    0,  637,    2, 0x0a /* Public */,
-     102,    0,  638,    2, 0x0a /* Public */,
-     103,    0,  639,    2, 0x0a /* Public */,
-     104,    0,  640,    2, 0x0a /* Public */,
-     105,    0,  641,    2, 0x0a /* Public */,
-     106,    0,  642,    2, 0x0a /* Public */,
-     107,    0,  643,    2, 0x0a /* Public */,
-     108,    0,  644,    2, 0x0a /* Public */,
-     109,    0,  645,    2, 0x0a /* Public */,
-     110,    0,  646,    2, 0x0a /* Public */,
-     111,    0,  647,    2, 0x08 /* Private */,
+       4,    0,  487,    2, 0x0a /* Public */,
+       5,    0,  488,    2, 0x0a /* Public */,
+       6,    0,  489,    2, 0x0a /* Public */,
+       7,    1,  490,    2, 0x0a /* Public */,
+       9,    0,  493,    2, 0x0a /* Public */,
+      10,    0,  494,    2, 0x0a /* Public */,
+      11,    0,  495,    2, 0x0a /* Public */,
+      12,    0,  496,    2, 0x0a /* Public */,
+      13,    0,  497,    2, 0x0a /* Public */,
+      14,    0,  498,    2, 0x0a /* Public */,
+      15,    0,  499,    2, 0x0a /* Public */,
+      16,    0,  500,    2, 0x0a /* Public */,
+      17,    0,  501,    2, 0x0a /* Public */,
+      18,    0,  502,    2, 0x0a /* Public */,
+      19,    0,  503,    2, 0x0a /* Public */,
+      20,    0,  504,    2, 0x0a /* Public */,
+      21,    0,  505,    2, 0x0a /* Public */,
+      22,    0,  506,    2, 0x0a /* Public */,
+      23,    0,  507,    2, 0x0a /* Public */,
+      24,    0,  508,    2, 0x0a /* Public */,
+      25,    0,  509,    2, 0x0a /* Public */,
+      26,    0,  510,    2, 0x0a /* Public */,
+      27,    0,  511,    2, 0x0a /* Public */,
+      28,    0,  512,    2, 0x0a /* Public */,
+      29,    0,  513,    2, 0x0a /* Public */,
+      30,    0,  514,    2, 0x0a /* Public */,
+      31,    0,  515,    2, 0x0a /* Public */,
+      32,    0,  516,    2, 0x0a /* Public */,
+      33,    0,  517,    2, 0x0a /* Public */,
+      34,    0,  518,    2, 0x0a /* Public */,
+      35,    0,  519,    2, 0x0a /* Public */,
+      36,    0,  520,    2, 0x0a /* Public */,
+      37,    0,  521,    2, 0x0a /* Public */,
+      38,    0,  522,    2, 0x0a /* Public */,
+      39,    0,  523,    2, 0x0a /* Public */,
+      40,    0,  524,    2, 0x0a /* Public */,
+      41,    0,  525,    2, 0x0a /* Public */,
+      42,    0,  526,    2, 0x0a /* Public */,
+      43,    0,  527,    2, 0x0a /* Public */,
+      44,    0,  528,    2, 0x0a /* Public */,
+      45,    1,  529,    2, 0x0a /* Public */,
+      46,    0,  532,    2, 0x0a /* Public */,
+      47,    0,  533,    2, 0x0a /* Public */,
+      48,    3,  534,    2, 0x0a /* Public */,
+      51,    0,  541,    2, 0x0a /* Public */,
+      52,    0,  542,    2, 0x0a /* Public */,
+      53,    0,  543,    2, 0x0a /* Public */,
+      54,    0,  544,    2, 0x0a /* Public */,
+      55,    0,  545,    2, 0x0a /* Public */,
+      56,    0,  546,    2, 0x0a /* Public */,
+      57,    0,  547,    2, 0x0a /* Public */,
+      58,    0,  548,    2, 0x0a /* Public */,
+      59,    0,  549,    2, 0x0a /* Public */,
+      60,    3,  550,    2, 0x0a /* Public */,
+      63,    3,  557,    2, 0x0a /* Public */,
+      64,    1,  564,    2, 0x0a /* Public */,
+      68,    2,  567,    2, 0x0a /* Public */,
+      72,    3,  572,    2, 0x0a /* Public */,
+      73,    2,  579,    2, 0x0a /* Public */,
+      75,    2,  584,    2, 0x0a /* Public */,
+      77,    0,  589,    2, 0x0a /* Public */,
+      78,    0,  590,    2, 0x0a /* Public */,
+      79,    2,  591,    2, 0x0a /* Public */,
+      80,    1,  596,    2, 0x0a /* Public */,
+      81,    2,  599,    2, 0x0a /* Public */,
+      83,    2,  604,    2, 0x0a /* Public */,
+      84,    2,  609,    2, 0x0a /* Public */,
+      86,    2,  614,    2, 0x0a /* Public */,
+      87,    0,  619,    2, 0x0a /* Public */,
+      88,    2,  620,    2, 0x0a /* Public */,
+      90,    2,  625,    2, 0x0a /* Public */,
+      91,    0,  630,    2, 0x0a /* Public */,
+      92,    1,  631,    2, 0x0a /* Public */,
+      93,    0,  634,    2, 0x0a /* Public */,
+      94,    0,  635,    2, 0x0a /* Public */,
+      95,    0,  636,    2, 0x0a /* Public */,
+      96,    0,  637,    2, 0x0a /* Public */,
+      97,    0,  638,    2, 0x0a /* Public */,
+      98,    0,  639,    2, 0x0a /* Public */,
+      99,    0,  640,    2, 0x0a /* Public */,
+     100,    0,  641,    2, 0x0a /* Public */,
+     101,    0,  642,    2, 0x0a /* Public */,
+     102,    0,  643,    2, 0x0a /* Public */,
+     103,    0,  644,    2, 0x0a /* Public */,
+     104,    0,  645,    2, 0x0a /* Public */,
+     105,    0,  646,    2, 0x0a /* Public */,
+     106,    0,  647,    2, 0x0a /* Public */,
+     107,    0,  648,    2, 0x0a /* Public */,
+     108,    0,  649,    2, 0x0a /* Public */,
+     109,    0,  650,    2, 0x0a /* Public */,
+     110,    0,  651,    2, 0x0a /* Public */,
+     111,    0,  652,    2, 0x0a /* Public */,
+     112,    0,  653,    2, 0x08 /* Private */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::Int,    3,
@@ -377,6 +380,7 @@ static const uint qt_meta_data_hsm_full[] = {
     QMetaType::Int, QMetaType::Int, QMetaType::Int,    8,   89,
     QMetaType::Void,
     QMetaType::Int, QMetaType::Int,    8,
+    QMetaType::Int,
     QMetaType::Int,
     QMetaType::Void,
     QMetaType::Double,
@@ -495,40 +499,42 @@ void hsm_full::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
         case 74: { int _r = _t->loadModel();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 75: _t->loadActuators(); break;
-        case 76: { double _r = _t->getForce();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 77: { double _r = _t->getForce2();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 78: { double _r = _t->getMaxSpan();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 79: { double _r = _t->getMaxSpan2();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 80: { double _r = _t->getMinSpan();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 81: { double _r = _t->getMinSpan2();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 82: { double _r = _t->getMaxForce();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 83: { double _r = _t->getMaxForce2();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 84: { double _r = _t->getMinForce();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 85: { double _r = _t->getMinForce2();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 86: { double _r = _t->getDispCommand();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 87: { double _r = _t->getDispCommand2();
-            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 88: { int _r = _t->getControlType();
+        case 75: { int _r = _t->saveModel();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 89: { int _r = _t->getControlType2();
+        case 76: _t->loadActuators(); break;
+        case 77: { double _r = _t->getForce();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 78: { double _r = _t->getForce2();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 79: { double _r = _t->getMaxSpan();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 80: { double _r = _t->getMaxSpan2();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 81: { double _r = _t->getMinSpan();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 82: { double _r = _t->getMinSpan2();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 83: { double _r = _t->getMaxForce();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 84: { double _r = _t->getMaxForce2();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 85: { double _r = _t->getMinForce();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 86: { double _r = _t->getMinForce2();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 87: { double _r = _t->getDispCommand();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 88: { double _r = _t->getDispCommand2();
+            if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
+        case 89: { int _r = _t->getControlType();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 90: { double _r = _t->getForceCommand();
+        case 90: { int _r = _t->getControlType2();
+            if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
+        case 91: { double _r = _t->getForceCommand();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 91: { double _r = _t->getForceCommand2();
+        case 92: { double _r = _t->getForceCommand2();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 92: { int _r = _t->update();
+        case 93: { int _r = _t->update();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
         default: ;
         }
@@ -573,13 +579,13 @@ int hsm_full::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 93)
+        if (_id < 94)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 93;
+        _id -= 94;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 93)
+        if (_id < 94)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 93;
+        _id -= 94;
     }
     return _id;
 }

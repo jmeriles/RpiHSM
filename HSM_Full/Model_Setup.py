@@ -139,4 +139,12 @@ def modelLoad(PickleFileName):
     Model = ModelDictionary['Model']
     el = ModelDictionary['el']
     return (Model, el)
+    
+def saveModel(Model,el):
+    ModelDictionary = {'Model': Model,'el': el}
+    file = open('ModelFile.dat', 'w+b')
+    pkl.dump(ModelDictionary,file)
+    file.close()
+    return (1)
+    
 

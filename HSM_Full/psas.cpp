@@ -637,6 +637,7 @@ int PSAS::setupModel(){
                 //int*ip = static_cast<int*>(test);
             //    npy_intp size = PyArray_SIZE(firstResult);
                 printf("Value returned from the function\n");
+                ui2->ModelDisplay->setPlainText("Success!");
             } else {
                 printf("Error");
                 PyErr_Print();
@@ -827,6 +828,7 @@ void PSAS::CustomEl_Window(){
 void PSAS::SavePickedActuators() {
     ActuatorPicks.open("PickActuators.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Actuators\n");
+    std::cout << (double) ui2->HybridDof1->value() << ", " << (double) ui2->HybridDof2->value()  << "\n";
     ActuatorPicks << (double) ui2->HybridDof1->value() << ", " << (double) ui2->HybridDof2->value()  << "\n";
     ActuatorPicks.close();
     sourceWindow->loadActuators();

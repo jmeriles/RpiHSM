@@ -513,6 +513,7 @@ public:
         Mass_Input = new QDoubleSpinBox(centralwidget);
         Mass_Input->setObjectName(QString::fromUtf8("Mass_Input"));
         Mass_Input->setGeometry(QRect(20, 140, 67, 31));
+        Mass_Input->setDecimals(10);
         Mass_Input->setMaximum(10000000000000000000.000000000000000);
         label_34 = new QLabel(centralwidget);
         label_34->setObjectName(QString::fromUtf8("label_34"));
@@ -563,7 +564,7 @@ public:
         zeta = new QDoubleSpinBox(centralwidget);
         zeta->setObjectName(QString::fromUtf8("zeta"));
         zeta->setGeometry(QRect(990, 450, 67, 31));
-        zeta->setDecimals(3);
+        zeta->setDecimals(6);
         zeta->setMaximum(1.990000000000000);
         label_36 = new QLabel(centralwidget);
         label_36->setObjectName(QString::fromUtf8("label_36"));
@@ -607,15 +608,18 @@ public:
         dir1 = new QDoubleSpinBox(centralwidget);
         dir1->setObjectName(QString::fromUtf8("dir1"));
         dir1->setGeometry(QRect(990, 180, 67, 31));
-        dir1->setDecimals(0);
+        dir1->setDecimals(2);
+        dir1->setMinimum(-99.000000000000000);
         dir2 = new QDoubleSpinBox(centralwidget);
         dir2->setObjectName(QString::fromUtf8("dir2"));
         dir2->setGeometry(QRect(1070, 180, 67, 31));
-        dir2->setDecimals(0);
+        dir2->setDecimals(2);
+        dir2->setMinimum(-99.000000000000000);
         dir3 = new QDoubleSpinBox(centralwidget);
         dir3->setObjectName(QString::fromUtf8("dir3"));
         dir3->setGeometry(QRect(1150, 180, 67, 31));
-        dir3->setDecimals(0);
+        dir3->setDecimals(2);
+        dir3->setMinimum(-99.000000000000000);
         Mode1 = new QDoubleSpinBox(centralwidget);
         Mode1->setObjectName(QString::fromUtf8("Mode1"));
         Mode1->setGeometry(QRect(1070, 450, 67, 31));
