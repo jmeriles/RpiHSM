@@ -23,8 +23,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_hsm_full_t {
-    QByteArrayData data[113];
-    char stringdata0[1404];
+    QByteArrayData data[110];
+    char stringdata0[1361];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -52,100 +52,97 @@ QT_MOC_LITERAL(15, 161, 18), // "getActOneDispScale"
 QT_MOC_LITERAL(16, 180, 18), // "getActTwoDispScale"
 QT_MOC_LITERAL(17, 199, 19), // "getActOneForceScale"
 QT_MOC_LITERAL(18, 219, 19), // "getActTwoForceScale"
-QT_MOC_LITERAL(19, 239, 16), // "useFirstActuator"
-QT_MOC_LITERAL(20, 256, 11), // "sendCommand"
-QT_MOC_LITERAL(21, 268, 7), // "sendPID"
-QT_MOC_LITERAL(22, 276, 12), // "sendPIDForce"
-QT_MOC_LITERAL(23, 289, 13), // "sliderCommand"
-QT_MOC_LITERAL(24, 303, 14), // "activateButton"
-QT_MOC_LITERAL(25, 318, 15), // "pressSpanButton"
-QT_MOC_LITERAL(26, 334, 7), // "setZero"
-QT_MOC_LITERAL(27, 342, 12), // "startControl"
-QT_MOC_LITERAL(28, 355, 8), // "calForce"
-QT_MOC_LITERAL(29, 364, 10), // "turnOnLow1"
-QT_MOC_LITERAL(30, 375, 11), // "turnOnHigh1"
-QT_MOC_LITERAL(31, 387, 17), // "switchControlType"
-QT_MOC_LITERAL(32, 405, 17), // "useSecondActuator"
-QT_MOC_LITERAL(33, 423, 12), // "sendCommand2"
-QT_MOC_LITERAL(34, 436, 8), // "sendPID2"
-QT_MOC_LITERAL(35, 445, 13), // "sendPIDForce2"
-QT_MOC_LITERAL(36, 459, 14), // "sliderCommand2"
-QT_MOC_LITERAL(37, 474, 15), // "activateButton2"
-QT_MOC_LITERAL(38, 490, 16), // "pressSpanButton2"
-QT_MOC_LITERAL(39, 507, 8), // "setZero2"
-QT_MOC_LITERAL(40, 516, 13), // "startControl2"
-QT_MOC_LITERAL(41, 530, 9), // "calForce2"
-QT_MOC_LITERAL(42, 540, 10), // "turnOnLow2"
-QT_MOC_LITERAL(43, 551, 11), // "turnOnHigh2"
-QT_MOC_LITERAL(44, 563, 18), // "switchControlType2"
-QT_MOC_LITERAL(45, 582, 9), // "readForce"
-QT_MOC_LITERAL(46, 592, 17), // "turnOffHydraulics"
-QT_MOC_LITERAL(47, 610, 9), // "updateLCD"
-QT_MOC_LITERAL(48, 620, 11), // "spanCommand"
-QT_MOC_LITERAL(49, 632, 10), // "targetSpan"
-QT_MOC_LITERAL(50, 643, 10), // "targetZero"
-QT_MOC_LITERAL(51, 654, 6), // "setAmp"
-QT_MOC_LITERAL(52, 661, 7), // "setFreq"
-QT_MOC_LITERAL(53, 669, 7), // "sinTest"
-QT_MOC_LITERAL(54, 677, 5), // "sweep"
-QT_MOC_LITERAL(55, 683, 7), // "ampTest"
-QT_MOC_LITERAL(56, 691, 8), // "reqloops"
-QT_MOC_LITERAL(57, 700, 11), // "PSAS_Window"
-QT_MOC_LITERAL(58, 712, 10), // "Cal_Window"
-QT_MOC_LITERAL(59, 723, 11), // "plotResults"
-QT_MOC_LITERAL(60, 735, 10), // "serialRead"
-QT_MOC_LITERAL(61, 746, 4), // "comm"
-QT_MOC_LITERAL(62, 751, 4), // "data"
-QT_MOC_LITERAL(63, 756, 11), // "serialWrite"
-QT_MOC_LITERAL(64, 768, 9), // "readFiles"
-QT_MOC_LITERAL(65, 778, 33), // "std::vector<std::vector<doubl..."
-QT_MOC_LITERAL(66, 812, 11), // "std::string"
-QT_MOC_LITERAL(67, 824, 8), // "fileName"
-QT_MOC_LITERAL(68, 833, 16), // "LinearRegression"
-QT_MOC_LITERAL(69, 850, 19), // "std::vector<double>"
-QT_MOC_LITERAL(70, 870, 5), // "xData"
-QT_MOC_LITERAL(71, 876, 5), // "yData"
-QT_MOC_LITERAL(72, 882, 10), // "sendDouble"
-QT_MOC_LITERAL(73, 893, 16), // "receivedToInches"
-QT_MOC_LITERAL(74, 910, 10), // "dataInBits"
-QT_MOC_LITERAL(75, 921, 12), // "inchesToBits"
-QT_MOC_LITERAL(76, 934, 12), // "dataInInches"
-QT_MOC_LITERAL(77, 947, 16), // "Interlock_Window"
-QT_MOC_LITERAL(78, 964, 24), // "readAllFilesAndCalibrate"
-QT_MOC_LITERAL(79, 989, 11), // "calLoadCell"
-QT_MOC_LITERAL(80, 1001, 10), // "returnLoad"
-QT_MOC_LITERAL(81, 1012, 10), // "setMaxDisp"
-QT_MOC_LITERAL(82, 1023, 4), // "Disp"
-QT_MOC_LITERAL(83, 1028, 10), // "setMinDisp"
-QT_MOC_LITERAL(84, 1039, 11), // "setMaxForce"
-QT_MOC_LITERAL(85, 1051, 5), // "Force"
-QT_MOC_LITERAL(86, 1057, 11), // "setMinForce"
-QT_MOC_LITERAL(87, 1069, 14), // "checkInterlock"
-QT_MOC_LITERAL(88, 1084, 14), // "resetInterlock"
-QT_MOC_LITERAL(89, 1099, 14), // "whichInterlock"
-QT_MOC_LITERAL(90, 1114, 13), // "isInterlockOn"
-QT_MOC_LITERAL(91, 1128, 16), // "clearPlotVectors"
-QT_MOC_LITERAL(92, 1145, 7), // "readAck"
-QT_MOC_LITERAL(93, 1153, 9), // "loadModel"
-QT_MOC_LITERAL(94, 1163, 9), // "saveModel"
-QT_MOC_LITERAL(95, 1173, 13), // "loadActuators"
-QT_MOC_LITERAL(96, 1187, 8), // "getForce"
-QT_MOC_LITERAL(97, 1196, 9), // "getForce2"
-QT_MOC_LITERAL(98, 1206, 10), // "getMaxSpan"
-QT_MOC_LITERAL(99, 1217, 11), // "getMaxSpan2"
-QT_MOC_LITERAL(100, 1229, 10), // "getMinSpan"
-QT_MOC_LITERAL(101, 1240, 11), // "getMinSpan2"
-QT_MOC_LITERAL(102, 1252, 11), // "getMaxForce"
-QT_MOC_LITERAL(103, 1264, 12), // "getMaxForce2"
-QT_MOC_LITERAL(104, 1277, 11), // "getMinForce"
-QT_MOC_LITERAL(105, 1289, 12), // "getMinForce2"
-QT_MOC_LITERAL(106, 1302, 14), // "getDispCommand"
-QT_MOC_LITERAL(107, 1317, 15), // "getDispCommand2"
-QT_MOC_LITERAL(108, 1333, 14), // "getControlType"
-QT_MOC_LITERAL(109, 1348, 15), // "getControlType2"
-QT_MOC_LITERAL(110, 1364, 15), // "getForceCommand"
-QT_MOC_LITERAL(111, 1380, 16), // "getForceCommand2"
-QT_MOC_LITERAL(112, 1397, 6) // "update"
+QT_MOC_LITERAL(19, 239, 16), // "loadGroundMotion"
+QT_MOC_LITERAL(20, 256, 16), // "useFirstActuator"
+QT_MOC_LITERAL(21, 273, 11), // "sendCommand"
+QT_MOC_LITERAL(22, 285, 7), // "sendPID"
+QT_MOC_LITERAL(23, 293, 12), // "sendPIDForce"
+QT_MOC_LITERAL(24, 306, 15), // "pressSpanButton"
+QT_MOC_LITERAL(25, 322, 7), // "setZero"
+QT_MOC_LITERAL(26, 330, 12), // "startControl"
+QT_MOC_LITERAL(27, 343, 8), // "calForce"
+QT_MOC_LITERAL(28, 352, 10), // "turnOnLow1"
+QT_MOC_LITERAL(29, 363, 11), // "turnOnHigh1"
+QT_MOC_LITERAL(30, 375, 17), // "switchControlType"
+QT_MOC_LITERAL(31, 393, 17), // "useSecondActuator"
+QT_MOC_LITERAL(32, 411, 12), // "sendCommand2"
+QT_MOC_LITERAL(33, 424, 8), // "sendPID2"
+QT_MOC_LITERAL(34, 433, 13), // "sendPIDForce2"
+QT_MOC_LITERAL(35, 447, 16), // "pressSpanButton2"
+QT_MOC_LITERAL(36, 464, 8), // "setZero2"
+QT_MOC_LITERAL(37, 473, 13), // "startControl2"
+QT_MOC_LITERAL(38, 487, 9), // "calForce2"
+QT_MOC_LITERAL(39, 497, 10), // "turnOnLow2"
+QT_MOC_LITERAL(40, 508, 11), // "turnOnHigh2"
+QT_MOC_LITERAL(41, 520, 18), // "switchControlType2"
+QT_MOC_LITERAL(42, 539, 9), // "readForce"
+QT_MOC_LITERAL(43, 549, 17), // "turnOffHydraulics"
+QT_MOC_LITERAL(44, 567, 9), // "updateLCD"
+QT_MOC_LITERAL(45, 577, 11), // "spanCommand"
+QT_MOC_LITERAL(46, 589, 10), // "targetSpan"
+QT_MOC_LITERAL(47, 600, 10), // "targetZero"
+QT_MOC_LITERAL(48, 611, 6), // "setAmp"
+QT_MOC_LITERAL(49, 618, 7), // "setFreq"
+QT_MOC_LITERAL(50, 626, 7), // "sinTest"
+QT_MOC_LITERAL(51, 634, 5), // "sweep"
+QT_MOC_LITERAL(52, 640, 7), // "ampTest"
+QT_MOC_LITERAL(53, 648, 8), // "reqloops"
+QT_MOC_LITERAL(54, 657, 11), // "PSAS_Window"
+QT_MOC_LITERAL(55, 669, 10), // "Cal_Window"
+QT_MOC_LITERAL(56, 680, 11), // "plotResults"
+QT_MOC_LITERAL(57, 692, 10), // "serialRead"
+QT_MOC_LITERAL(58, 703, 4), // "comm"
+QT_MOC_LITERAL(59, 708, 4), // "data"
+QT_MOC_LITERAL(60, 713, 11), // "serialWrite"
+QT_MOC_LITERAL(61, 725, 9), // "readFiles"
+QT_MOC_LITERAL(62, 735, 33), // "std::vector<std::vector<doubl..."
+QT_MOC_LITERAL(63, 769, 11), // "std::string"
+QT_MOC_LITERAL(64, 781, 8), // "fileName"
+QT_MOC_LITERAL(65, 790, 16), // "LinearRegression"
+QT_MOC_LITERAL(66, 807, 19), // "std::vector<double>"
+QT_MOC_LITERAL(67, 827, 5), // "xData"
+QT_MOC_LITERAL(68, 833, 5), // "yData"
+QT_MOC_LITERAL(69, 839, 10), // "sendDouble"
+QT_MOC_LITERAL(70, 850, 16), // "receivedToInches"
+QT_MOC_LITERAL(71, 867, 10), // "dataInBits"
+QT_MOC_LITERAL(72, 878, 12), // "inchesToBits"
+QT_MOC_LITERAL(73, 891, 12), // "dataInInches"
+QT_MOC_LITERAL(74, 904, 16), // "Interlock_Window"
+QT_MOC_LITERAL(75, 921, 24), // "readAllFilesAndCalibrate"
+QT_MOC_LITERAL(76, 946, 11), // "calLoadCell"
+QT_MOC_LITERAL(77, 958, 10), // "returnLoad"
+QT_MOC_LITERAL(78, 969, 10), // "setMaxDisp"
+QT_MOC_LITERAL(79, 980, 4), // "Disp"
+QT_MOC_LITERAL(80, 985, 10), // "setMinDisp"
+QT_MOC_LITERAL(81, 996, 11), // "setMaxForce"
+QT_MOC_LITERAL(82, 1008, 5), // "Force"
+QT_MOC_LITERAL(83, 1014, 11), // "setMinForce"
+QT_MOC_LITERAL(84, 1026, 14), // "checkInterlock"
+QT_MOC_LITERAL(85, 1041, 14), // "resetInterlock"
+QT_MOC_LITERAL(86, 1056, 14), // "whichInterlock"
+QT_MOC_LITERAL(87, 1071, 13), // "isInterlockOn"
+QT_MOC_LITERAL(88, 1085, 16), // "clearPlotVectors"
+QT_MOC_LITERAL(89, 1102, 7), // "readAck"
+QT_MOC_LITERAL(90, 1110, 9), // "loadModel"
+QT_MOC_LITERAL(91, 1120, 9), // "saveModel"
+QT_MOC_LITERAL(92, 1130, 13), // "loadActuators"
+QT_MOC_LITERAL(93, 1144, 8), // "getForce"
+QT_MOC_LITERAL(94, 1153, 9), // "getForce2"
+QT_MOC_LITERAL(95, 1163, 10), // "getMaxSpan"
+QT_MOC_LITERAL(96, 1174, 11), // "getMaxSpan2"
+QT_MOC_LITERAL(97, 1186, 10), // "getMinSpan"
+QT_MOC_LITERAL(98, 1197, 11), // "getMinSpan2"
+QT_MOC_LITERAL(99, 1209, 11), // "getMaxForce"
+QT_MOC_LITERAL(100, 1221, 12), // "getMaxForce2"
+QT_MOC_LITERAL(101, 1234, 11), // "getMinForce"
+QT_MOC_LITERAL(102, 1246, 12), // "getMinForce2"
+QT_MOC_LITERAL(103, 1259, 14), // "getDispCommand"
+QT_MOC_LITERAL(104, 1274, 15), // "getDispCommand2"
+QT_MOC_LITERAL(105, 1290, 14), // "getControlType"
+QT_MOC_LITERAL(106, 1305, 15), // "getControlType2"
+QT_MOC_LITERAL(107, 1321, 15), // "getForceCommand"
+QT_MOC_LITERAL(108, 1337, 16), // "getForceCommand2"
+QT_MOC_LITERAL(109, 1354, 6) // "update"
 
     },
     "hsm_full\0sendSignal\0\0value\0updatePlot\0"
@@ -154,17 +151,15 @@ QT_MOC_LITERAL(112, 1397, 6) // "update"
     "setPlotScale\0setLCData\0saveScaleData\0"
     "saveLCData\0getActOneDispScale\0"
     "getActTwoDispScale\0getActOneForceScale\0"
-    "getActTwoForceScale\0useFirstActuator\0"
-    "sendCommand\0sendPID\0sendPIDForce\0"
-    "sliderCommand\0activateButton\0"
-    "pressSpanButton\0setZero\0startControl\0"
-    "calForce\0turnOnLow1\0turnOnHigh1\0"
-    "switchControlType\0useSecondActuator\0"
-    "sendCommand2\0sendPID2\0sendPIDForce2\0"
-    "sliderCommand2\0activateButton2\0"
-    "pressSpanButton2\0setZero2\0startControl2\0"
-    "calForce2\0turnOnLow2\0turnOnHigh2\0"
-    "switchControlType2\0readForce\0"
+    "getActTwoForceScale\0loadGroundMotion\0"
+    "useFirstActuator\0sendCommand\0sendPID\0"
+    "sendPIDForce\0pressSpanButton\0setZero\0"
+    "startControl\0calForce\0turnOnLow1\0"
+    "turnOnHigh1\0switchControlType\0"
+    "useSecondActuator\0sendCommand2\0sendPID2\0"
+    "sendPIDForce2\0pressSpanButton2\0setZero2\0"
+    "startControl2\0calForce2\0turnOnLow2\0"
+    "turnOnHigh2\0switchControlType2\0readForce\0"
     "turnOffHydraulics\0updateLCD\0spanCommand\0"
     "targetSpan\0targetZero\0setAmp\0setFreq\0"
     "sinTest\0sweep\0ampTest\0reqloops\0"
@@ -198,7 +193,7 @@ static const uint qt_meta_data_hsm_full[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      94,   14, // methods
+      91,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -206,102 +201,99 @@ static const uint qt_meta_data_hsm_full[] = {
        1,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,  484,    2, 0x06 /* Public */,
+       1,    1,  469,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-       4,    0,  487,    2, 0x0a /* Public */,
-       5,    0,  488,    2, 0x0a /* Public */,
-       6,    0,  489,    2, 0x0a /* Public */,
-       7,    1,  490,    2, 0x0a /* Public */,
-       9,    0,  493,    2, 0x0a /* Public */,
-      10,    0,  494,    2, 0x0a /* Public */,
-      11,    0,  495,    2, 0x0a /* Public */,
-      12,    0,  496,    2, 0x0a /* Public */,
-      13,    0,  497,    2, 0x0a /* Public */,
-      14,    0,  498,    2, 0x0a /* Public */,
-      15,    0,  499,    2, 0x0a /* Public */,
-      16,    0,  500,    2, 0x0a /* Public */,
-      17,    0,  501,    2, 0x0a /* Public */,
-      18,    0,  502,    2, 0x0a /* Public */,
-      19,    0,  503,    2, 0x0a /* Public */,
-      20,    0,  504,    2, 0x0a /* Public */,
-      21,    0,  505,    2, 0x0a /* Public */,
-      22,    0,  506,    2, 0x0a /* Public */,
-      23,    0,  507,    2, 0x0a /* Public */,
-      24,    0,  508,    2, 0x0a /* Public */,
-      25,    0,  509,    2, 0x0a /* Public */,
-      26,    0,  510,    2, 0x0a /* Public */,
-      27,    0,  511,    2, 0x0a /* Public */,
-      28,    0,  512,    2, 0x0a /* Public */,
-      29,    0,  513,    2, 0x0a /* Public */,
-      30,    0,  514,    2, 0x0a /* Public */,
-      31,    0,  515,    2, 0x0a /* Public */,
-      32,    0,  516,    2, 0x0a /* Public */,
-      33,    0,  517,    2, 0x0a /* Public */,
-      34,    0,  518,    2, 0x0a /* Public */,
-      35,    0,  519,    2, 0x0a /* Public */,
-      36,    0,  520,    2, 0x0a /* Public */,
-      37,    0,  521,    2, 0x0a /* Public */,
-      38,    0,  522,    2, 0x0a /* Public */,
-      39,    0,  523,    2, 0x0a /* Public */,
-      40,    0,  524,    2, 0x0a /* Public */,
-      41,    0,  525,    2, 0x0a /* Public */,
-      42,    0,  526,    2, 0x0a /* Public */,
-      43,    0,  527,    2, 0x0a /* Public */,
-      44,    0,  528,    2, 0x0a /* Public */,
-      45,    1,  529,    2, 0x0a /* Public */,
-      46,    0,  532,    2, 0x0a /* Public */,
-      47,    0,  533,    2, 0x0a /* Public */,
-      48,    3,  534,    2, 0x0a /* Public */,
-      51,    0,  541,    2, 0x0a /* Public */,
-      52,    0,  542,    2, 0x0a /* Public */,
-      53,    0,  543,    2, 0x0a /* Public */,
-      54,    0,  544,    2, 0x0a /* Public */,
-      55,    0,  545,    2, 0x0a /* Public */,
-      56,    0,  546,    2, 0x0a /* Public */,
-      57,    0,  547,    2, 0x0a /* Public */,
-      58,    0,  548,    2, 0x0a /* Public */,
-      59,    0,  549,    2, 0x0a /* Public */,
-      60,    3,  550,    2, 0x0a /* Public */,
-      63,    3,  557,    2, 0x0a /* Public */,
-      64,    1,  564,    2, 0x0a /* Public */,
-      68,    2,  567,    2, 0x0a /* Public */,
-      72,    3,  572,    2, 0x0a /* Public */,
-      73,    2,  579,    2, 0x0a /* Public */,
-      75,    2,  584,    2, 0x0a /* Public */,
-      77,    0,  589,    2, 0x0a /* Public */,
-      78,    0,  590,    2, 0x0a /* Public */,
-      79,    2,  591,    2, 0x0a /* Public */,
-      80,    1,  596,    2, 0x0a /* Public */,
-      81,    2,  599,    2, 0x0a /* Public */,
-      83,    2,  604,    2, 0x0a /* Public */,
-      84,    2,  609,    2, 0x0a /* Public */,
-      86,    2,  614,    2, 0x0a /* Public */,
-      87,    0,  619,    2, 0x0a /* Public */,
-      88,    2,  620,    2, 0x0a /* Public */,
-      90,    2,  625,    2, 0x0a /* Public */,
-      91,    0,  630,    2, 0x0a /* Public */,
-      92,    1,  631,    2, 0x0a /* Public */,
-      93,    0,  634,    2, 0x0a /* Public */,
-      94,    0,  635,    2, 0x0a /* Public */,
-      95,    0,  636,    2, 0x0a /* Public */,
-      96,    0,  637,    2, 0x0a /* Public */,
-      97,    0,  638,    2, 0x0a /* Public */,
-      98,    0,  639,    2, 0x0a /* Public */,
-      99,    0,  640,    2, 0x0a /* Public */,
-     100,    0,  641,    2, 0x0a /* Public */,
-     101,    0,  642,    2, 0x0a /* Public */,
-     102,    0,  643,    2, 0x0a /* Public */,
-     103,    0,  644,    2, 0x0a /* Public */,
-     104,    0,  645,    2, 0x0a /* Public */,
-     105,    0,  646,    2, 0x0a /* Public */,
-     106,    0,  647,    2, 0x0a /* Public */,
-     107,    0,  648,    2, 0x0a /* Public */,
-     108,    0,  649,    2, 0x0a /* Public */,
-     109,    0,  650,    2, 0x0a /* Public */,
-     110,    0,  651,    2, 0x0a /* Public */,
-     111,    0,  652,    2, 0x0a /* Public */,
-     112,    0,  653,    2, 0x08 /* Private */,
+       4,    0,  472,    2, 0x0a /* Public */,
+       5,    0,  473,    2, 0x0a /* Public */,
+       6,    0,  474,    2, 0x0a /* Public */,
+       7,    1,  475,    2, 0x0a /* Public */,
+       9,    0,  478,    2, 0x0a /* Public */,
+      10,    0,  479,    2, 0x0a /* Public */,
+      11,    0,  480,    2, 0x0a /* Public */,
+      12,    0,  481,    2, 0x0a /* Public */,
+      13,    0,  482,    2, 0x0a /* Public */,
+      14,    0,  483,    2, 0x0a /* Public */,
+      15,    0,  484,    2, 0x0a /* Public */,
+      16,    0,  485,    2, 0x0a /* Public */,
+      17,    0,  486,    2, 0x0a /* Public */,
+      18,    0,  487,    2, 0x0a /* Public */,
+      19,    0,  488,    2, 0x0a /* Public */,
+      20,    0,  489,    2, 0x0a /* Public */,
+      21,    0,  490,    2, 0x0a /* Public */,
+      22,    0,  491,    2, 0x0a /* Public */,
+      23,    0,  492,    2, 0x0a /* Public */,
+      24,    0,  493,    2, 0x0a /* Public */,
+      25,    0,  494,    2, 0x0a /* Public */,
+      26,    0,  495,    2, 0x0a /* Public */,
+      27,    0,  496,    2, 0x0a /* Public */,
+      28,    0,  497,    2, 0x0a /* Public */,
+      29,    0,  498,    2, 0x0a /* Public */,
+      30,    0,  499,    2, 0x0a /* Public */,
+      31,    0,  500,    2, 0x0a /* Public */,
+      32,    0,  501,    2, 0x0a /* Public */,
+      33,    0,  502,    2, 0x0a /* Public */,
+      34,    0,  503,    2, 0x0a /* Public */,
+      35,    0,  504,    2, 0x0a /* Public */,
+      36,    0,  505,    2, 0x0a /* Public */,
+      37,    0,  506,    2, 0x0a /* Public */,
+      38,    0,  507,    2, 0x0a /* Public */,
+      39,    0,  508,    2, 0x0a /* Public */,
+      40,    0,  509,    2, 0x0a /* Public */,
+      41,    0,  510,    2, 0x0a /* Public */,
+      42,    1,  511,    2, 0x0a /* Public */,
+      43,    0,  514,    2, 0x0a /* Public */,
+      44,    0,  515,    2, 0x0a /* Public */,
+      45,    3,  516,    2, 0x0a /* Public */,
+      48,    0,  523,    2, 0x0a /* Public */,
+      49,    0,  524,    2, 0x0a /* Public */,
+      50,    0,  525,    2, 0x0a /* Public */,
+      51,    0,  526,    2, 0x0a /* Public */,
+      52,    0,  527,    2, 0x0a /* Public */,
+      53,    0,  528,    2, 0x0a /* Public */,
+      54,    0,  529,    2, 0x0a /* Public */,
+      55,    0,  530,    2, 0x0a /* Public */,
+      56,    0,  531,    2, 0x0a /* Public */,
+      57,    3,  532,    2, 0x0a /* Public */,
+      60,    3,  539,    2, 0x0a /* Public */,
+      61,    1,  546,    2, 0x0a /* Public */,
+      65,    2,  549,    2, 0x0a /* Public */,
+      69,    3,  554,    2, 0x0a /* Public */,
+      70,    2,  561,    2, 0x0a /* Public */,
+      72,    2,  566,    2, 0x0a /* Public */,
+      74,    0,  571,    2, 0x0a /* Public */,
+      75,    0,  572,    2, 0x0a /* Public */,
+      76,    2,  573,    2, 0x0a /* Public */,
+      77,    1,  578,    2, 0x0a /* Public */,
+      78,    2,  581,    2, 0x0a /* Public */,
+      80,    2,  586,    2, 0x0a /* Public */,
+      81,    2,  591,    2, 0x0a /* Public */,
+      83,    2,  596,    2, 0x0a /* Public */,
+      84,    0,  601,    2, 0x0a /* Public */,
+      85,    2,  602,    2, 0x0a /* Public */,
+      87,    2,  607,    2, 0x0a /* Public */,
+      88,    0,  612,    2, 0x0a /* Public */,
+      89,    1,  613,    2, 0x0a /* Public */,
+      90,    0,  616,    2, 0x0a /* Public */,
+      91,    0,  617,    2, 0x0a /* Public */,
+      92,    0,  618,    2, 0x0a /* Public */,
+      93,    0,  619,    2, 0x0a /* Public */,
+      94,    0,  620,    2, 0x0a /* Public */,
+      95,    0,  621,    2, 0x0a /* Public */,
+      96,    0,  622,    2, 0x0a /* Public */,
+      97,    0,  623,    2, 0x0a /* Public */,
+      98,    0,  624,    2, 0x0a /* Public */,
+      99,    0,  625,    2, 0x0a /* Public */,
+     100,    0,  626,    2, 0x0a /* Public */,
+     101,    0,  627,    2, 0x0a /* Public */,
+     102,    0,  628,    2, 0x0a /* Public */,
+     103,    0,  629,    2, 0x0a /* Public */,
+     104,    0,  630,    2, 0x0a /* Public */,
+     105,    0,  631,    2, 0x0a /* Public */,
+     106,    0,  632,    2, 0x0a /* Public */,
+     107,    0,  633,    2, 0x0a /* Public */,
+     108,    0,  634,    2, 0x0a /* Public */,
+     109,    0,  635,    2, 0x08 /* Private */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::Int,    3,
@@ -344,13 +336,10 @@ static const uint qt_meta_data_hsm_full[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
-    QMetaType::Void,
-    QMetaType::Void,
-    QMetaType::Void,
     QMetaType::Void, QMetaType::Int,    8,
     QMetaType::Void,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::Int, QMetaType::Double, QMetaType::Double,    8,   49,   50,
+    QMetaType::Void, QMetaType::Int, QMetaType::Double, QMetaType::Double,    8,   46,   47,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -360,24 +349,24 @@ static const uint qt_meta_data_hsm_full[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Int,
-    QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,    8,   61,   62,
-    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int,    8,   61,   62,
-    0x80000000 | 65, 0x80000000 | 66,   67,
-    0x80000000 | 69, 0x80000000 | 69, 0x80000000 | 69,   70,   71,
-    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Double,    8,   61,   62,
-    QMetaType::Double, QMetaType::Int, QMetaType::Int,    8,   74,
-    QMetaType::Int, QMetaType::Int, QMetaType::Double,    8,   76,
+    QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,    8,   58,   59,
+    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int,    8,   58,   59,
+    0x80000000 | 62, 0x80000000 | 63,   64,
+    0x80000000 | 66, 0x80000000 | 66, 0x80000000 | 66,   67,   68,
+    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Double,    8,   58,   59,
+    QMetaType::Double, QMetaType::Int, QMetaType::Int,    8,   71,
+    QMetaType::Int, QMetaType::Int, QMetaType::Double,    8,   73,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void, QMetaType::Int, QMetaType::Int,    8,    3,
     QMetaType::Double, QMetaType::Int,    8,
+    QMetaType::Void, QMetaType::Int, QMetaType::Double,    8,   79,
+    QMetaType::Void, QMetaType::Int, QMetaType::Double,    8,   79,
     QMetaType::Void, QMetaType::Int, QMetaType::Double,    8,   82,
     QMetaType::Void, QMetaType::Int, QMetaType::Double,    8,   82,
-    QMetaType::Void, QMetaType::Int, QMetaType::Double,    8,   85,
-    QMetaType::Void, QMetaType::Int, QMetaType::Double,    8,   85,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::Int, QMetaType::Int,    8,   89,
-    QMetaType::Int, QMetaType::Int, QMetaType::Int,    8,   89,
+    QMetaType::Void, QMetaType::Int, QMetaType::Int,    8,   86,
+    QMetaType::Int, QMetaType::Int, QMetaType::Int,    8,   86,
     QMetaType::Void,
     QMetaType::Int, QMetaType::Int,    8,
     QMetaType::Int,
@@ -429,112 +418,109 @@ void hsm_full::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
         case 14: { double _r = _t->getActTwoForceScale();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 15: _t->useFirstActuator(); break;
-        case 16: _t->sendCommand(); break;
-        case 17: _t->sendPID(); break;
-        case 18: _t->sendPIDForce(); break;
-        case 19: _t->sliderCommand(); break;
-        case 20: _t->activateButton(); break;
-        case 21: _t->pressSpanButton(); break;
-        case 22: _t->setZero(); break;
-        case 23: _t->startControl(); break;
-        case 24: _t->calForce(); break;
-        case 25: _t->turnOnLow1(); break;
-        case 26: _t->turnOnHigh1(); break;
-        case 27: _t->switchControlType(); break;
-        case 28: _t->useSecondActuator(); break;
-        case 29: _t->sendCommand2(); break;
-        case 30: _t->sendPID2(); break;
-        case 31: _t->sendPIDForce2(); break;
-        case 32: _t->sliderCommand2(); break;
-        case 33: _t->activateButton2(); break;
-        case 34: _t->pressSpanButton2(); break;
-        case 35: _t->setZero2(); break;
-        case 36: _t->startControl2(); break;
-        case 37: _t->calForce2(); break;
-        case 38: _t->turnOnLow2(); break;
-        case 39: _t->turnOnHigh2(); break;
-        case 40: _t->switchControlType2(); break;
-        case 41: _t->readForce((*reinterpret_cast< int(*)>(_a[1]))); break;
-        case 42: _t->turnOffHydraulics(); break;
-        case 43: _t->updateLCD(); break;
-        case 44: _t->spanCommand((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
-        case 45: _t->setAmp(); break;
-        case 46: _t->setFreq(); break;
-        case 47: _t->sinTest(); break;
-        case 48: _t->sweep(); break;
-        case 49: _t->ampTest(); break;
-        case 50: _t->reqloops(); break;
-        case 51: _t->PSAS_Window(); break;
-        case 52: _t->Cal_Window(); break;
-        case 53: { int _r = _t->plotResults();
+        case 15: _t->loadGroundMotion(); break;
+        case 16: _t->useFirstActuator(); break;
+        case 17: _t->sendCommand(); break;
+        case 18: _t->sendPID(); break;
+        case 19: _t->sendPIDForce(); break;
+        case 20: _t->pressSpanButton(); break;
+        case 21: _t->setZero(); break;
+        case 22: _t->startControl(); break;
+        case 23: _t->calForce(); break;
+        case 24: _t->turnOnLow1(); break;
+        case 25: _t->turnOnHigh1(); break;
+        case 26: _t->switchControlType(); break;
+        case 27: _t->useSecondActuator(); break;
+        case 28: _t->sendCommand2(); break;
+        case 29: _t->sendPID2(); break;
+        case 30: _t->sendPIDForce2(); break;
+        case 31: _t->pressSpanButton2(); break;
+        case 32: _t->setZero2(); break;
+        case 33: _t->startControl2(); break;
+        case 34: _t->calForce2(); break;
+        case 35: _t->turnOnLow2(); break;
+        case 36: _t->turnOnHigh2(); break;
+        case 37: _t->switchControlType2(); break;
+        case 38: _t->readForce((*reinterpret_cast< int(*)>(_a[1]))); break;
+        case 39: _t->turnOffHydraulics(); break;
+        case 40: _t->updateLCD(); break;
+        case 41: _t->spanCommand((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
+        case 42: _t->setAmp(); break;
+        case 43: _t->setFreq(); break;
+        case 44: _t->sinTest(); break;
+        case 45: _t->sweep(); break;
+        case 46: _t->ampTest(); break;
+        case 47: _t->reqloops(); break;
+        case 48: _t->PSAS_Window(); break;
+        case 49: _t->Cal_Window(); break;
+        case 50: { int _r = _t->plotResults();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 54: { int _r = _t->serialRead((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])));
+        case 51: { int _r = _t->serialRead((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])));
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 55: _t->serialWrite((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3]))); break;
-        case 56: { std::vector<std::vector<double> > _r = _t->readFiles((*reinterpret_cast< std::string(*)>(_a[1])));
+        case 52: _t->serialWrite((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3]))); break;
+        case 53: { std::vector<std::vector<double> > _r = _t->readFiles((*reinterpret_cast< std::string(*)>(_a[1])));
             if (_a[0]) *reinterpret_cast< std::vector<std::vector<double> >*>(_a[0]) = std::move(_r); }  break;
-        case 57: { std::vector<double> _r = _t->LinearRegression((*reinterpret_cast< std::vector<double>(*)>(_a[1])),(*reinterpret_cast< std::vector<double>(*)>(_a[2])));
+        case 54: { std::vector<double> _r = _t->LinearRegression((*reinterpret_cast< std::vector<double>(*)>(_a[1])),(*reinterpret_cast< std::vector<double>(*)>(_a[2])));
             if (_a[0]) *reinterpret_cast< std::vector<double>*>(_a[0]) = std::move(_r); }  break;
-        case 58: _t->sendDouble((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
-        case 59: { double _r = _t->receivedToInches((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])));
+        case 55: _t->sendDouble((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< double(*)>(_a[3]))); break;
+        case 56: { double _r = _t->receivedToInches((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])));
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 60: { int _r = _t->inchesToBits((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])));
+        case 57: { int _r = _t->inchesToBits((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2])));
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 61: _t->Interlock_Window(); break;
-        case 62: _t->readAllFilesAndCalibrate(); break;
-        case 63: _t->calLoadCell((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
-        case 64: { double _r = _t->returnLoad((*reinterpret_cast< int(*)>(_a[1])));
+        case 58: _t->Interlock_Window(); break;
+        case 59: _t->readAllFilesAndCalibrate(); break;
+        case 60: _t->calLoadCell((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
+        case 61: { double _r = _t->returnLoad((*reinterpret_cast< int(*)>(_a[1])));
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 65: _t->setMaxDisp((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
-        case 66: _t->setMinDisp((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
-        case 67: _t->setMaxForce((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
-        case 68: _t->setMinForce((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
-        case 69: _t->checkInterlock(); break;
-        case 70: _t->resetInterlock((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
-        case 71: { int _r = _t->isInterlockOn((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])));
+        case 62: _t->setMaxDisp((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
+        case 63: _t->setMinDisp((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
+        case 64: _t->setMaxForce((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
+        case 65: _t->setMinForce((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
+        case 66: _t->checkInterlock(); break;
+        case 67: _t->resetInterlock((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2]))); break;
+        case 68: { int _r = _t->isInterlockOn((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])));
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 72: _t->clearPlotVectors(); break;
-        case 73: { int _r = _t->readAck((*reinterpret_cast< int(*)>(_a[1])));
+        case 69: _t->clearPlotVectors(); break;
+        case 70: { int _r = _t->readAck((*reinterpret_cast< int(*)>(_a[1])));
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 74: { int _r = _t->loadModel();
+        case 71: { int _r = _t->loadModel();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 75: { int _r = _t->saveModel();
+        case 72: { int _r = _t->saveModel();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 76: _t->loadActuators(); break;
-        case 77: { double _r = _t->getForce();
+        case 73: _t->loadActuators(); break;
+        case 74: { double _r = _t->getForce();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 78: { double _r = _t->getForce2();
+        case 75: { double _r = _t->getForce2();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 79: { double _r = _t->getMaxSpan();
+        case 76: { double _r = _t->getMaxSpan();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 80: { double _r = _t->getMaxSpan2();
+        case 77: { double _r = _t->getMaxSpan2();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 81: { double _r = _t->getMinSpan();
+        case 78: { double _r = _t->getMinSpan();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 82: { double _r = _t->getMinSpan2();
+        case 79: { double _r = _t->getMinSpan2();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 83: { double _r = _t->getMaxForce();
+        case 80: { double _r = _t->getMaxForce();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 84: { double _r = _t->getMaxForce2();
+        case 81: { double _r = _t->getMaxForce2();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 85: { double _r = _t->getMinForce();
+        case 82: { double _r = _t->getMinForce();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 86: { double _r = _t->getMinForce2();
+        case 83: { double _r = _t->getMinForce2();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 87: { double _r = _t->getDispCommand();
+        case 84: { double _r = _t->getDispCommand();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 88: { double _r = _t->getDispCommand2();
+        case 85: { double _r = _t->getDispCommand2();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 89: { int _r = _t->getControlType();
+        case 86: { int _r = _t->getControlType();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 90: { int _r = _t->getControlType2();
+        case 87: { int _r = _t->getControlType2();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
-        case 91: { double _r = _t->getForceCommand();
+        case 88: { double _r = _t->getForceCommand();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 92: { double _r = _t->getForceCommand2();
+        case 89: { double _r = _t->getForceCommand2();
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 93: { int _r = _t->update();
+        case 90: { int _r = _t->update();
             if (_a[0]) *reinterpret_cast< int*>(_a[0]) = std::move(_r); }  break;
         default: ;
         }
@@ -579,13 +565,13 @@ int hsm_full::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 94)
+        if (_id < 91)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 94;
+        _id -= 91;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 94)
+        if (_id < 91)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 94;
+        _id -= 91;
     }
     return _id;
 }
@@ -963,8 +949,8 @@ int CustomElement::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     return _id;
 }
 struct qt_meta_stringdata_SpanCalibration_t {
-    QByteArrayData data[12];
-    char stringdata0[109];
+    QByteArrayData data[11];
+    char stringdata0[101];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -983,13 +969,12 @@ QT_MOC_LITERAL(6, 60, 1), // "Y"
 QT_MOC_LITERAL(7, 62, 6), // "potCal"
 QT_MOC_LITERAL(8, 69, 14), // "activatePotCal"
 QT_MOC_LITERAL(9, 84, 9), // "BitToInch"
-QT_MOC_LITERAL(10, 94, 6), // "bitVal"
-QT_MOC_LITERAL(11, 101, 7) // "loadCal"
+QT_MOC_LITERAL(10, 94, 6) // "bitVal"
 
     },
     "SpanCalibration\0startCalibration\0\0"
     "plotCal\0QVector<double>\0X\0Y\0potCal\0"
-    "activatePotCal\0BitToInch\0bitVal\0loadCal"
+    "activatePotCal\0BitToInch\0bitVal"
 };
 #undef QT_MOC_LITERAL
 
@@ -999,7 +984,7 @@ static const uint qt_meta_data_SpanCalibration[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       6,   14, // methods
+       5,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -1007,12 +992,11 @@ static const uint qt_meta_data_SpanCalibration[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   44,    2, 0x0a /* Public */,
-       3,    2,   45,    2, 0x0a /* Public */,
-       7,    0,   50,    2, 0x0a /* Public */,
-       8,    0,   51,    2, 0x0a /* Public */,
-       9,    1,   52,    2, 0x0a /* Public */,
-      11,    0,   55,    2, 0x0a /* Public */,
+       1,    0,   39,    2, 0x0a /* Public */,
+       3,    2,   40,    2, 0x0a /* Public */,
+       7,    0,   45,    2, 0x0a /* Public */,
+       8,    0,   46,    2, 0x0a /* Public */,
+       9,    1,   47,    2, 0x0a /* Public */,
 
  // slots: parameters
     QMetaType::Void,
@@ -1020,7 +1004,6 @@ static const uint qt_meta_data_SpanCalibration[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Double, QMetaType::Int,   10,
-    QMetaType::Void,
 
        0        // eod
 };
@@ -1037,7 +1020,6 @@ void SpanCalibration::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int 
         case 3: _t->activatePotCal(); break;
         case 4: { double _r = _t->BitToInch((*reinterpret_cast< int(*)>(_a[1])));
             if (_a[0]) *reinterpret_cast< double*>(_a[0]) = std::move(_r); }  break;
-        case 5: _t->loadCal(); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -1084,13 +1066,13 @@ int SpanCalibration::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 6)
+        if (_id < 5)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 6;
+        _id -= 5;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 6)
+        if (_id < 5)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 6;
+        _id -= 5;
     }
     return _id;
 }

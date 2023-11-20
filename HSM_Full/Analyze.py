@@ -60,6 +60,7 @@ class Analyze:
         c5=dt*(gamma/(2*beta)-1)
         
         Keff=c0*Model.M+c2*Model.C+Model.K
+        Model.Keff = Keff
         U=np.zeros((len(Model.FDOF),LoadingLen))
         U_dot=np.zeros((len(Model.FDOF),LoadingLen))
         U_ddot=np.zeros((len(Model.FDOF),LoadingLen))
@@ -70,6 +71,10 @@ class Analyze:
         K=Model.K
         C=Model.C
         M=Model.M
+        
+        Mtest = np.copy(Model.M)
+        Mtest[4,0] = 0
+        print(Mtest)
 
         
         #Set of influence vectors for each fixed dof
@@ -81,21 +86,21 @@ class Analyze:
         
         if Model.ModelSet[0]=='Planar':
             for i in range(len(Model.FDOF)):
-                if (Model.FDOF[i]+3) % 3 == 0 and DynOp[3][0]==1:
-                    influence.append(1)
-                elif (Model.FDOF[i]+3-1) % 3==0 and DynOp[3][1]==1:
-                    influence.append(1)
+                if (Model.FDOF[i]+3) % 3 == 0 and DynOp[3][0]!=0:
+                    influence.append(DynOp[3][0])
+                elif (Model.FDOF[i]+3-1) % 3==0 and DynOp[3][1]!=0:
+                    influence.append(DynOp[3][1])
                 else:
                     influence.append(0)
                     
         else:
             for i in range(len(Model.FDOF)):
-                if (Model.FDOF[i]+6) % 6 == 0 and DynOp[3][0]==1:
-                    influence.append(1)
-                elif (Model.FDOF[i]+6-1) % 6==0 and DynOp[3][1]==1:
-                    influence.append(1)
-                elif (Model.FDOF[i]+6-2) % 6==0 and DynOp[3][2]==1:
-                    influence.append(1)
+                if (Model.FDOF[i]+6) % 6 == 0 and DynOp[3][0]!=0:
+                    influence.append(DynOp[3][0])
+                elif (Model.FDOF[i]+6-1) % 6==0 and DynOp[3][1]!=0:
+                    influence.append(DynOp[3][0])
+                elif (Model.FDOF[i]+6-2) % 6==0 and DynOp[3][2]!=0:
+                    influence.append(DynOp[3][0])
                 else:
                     influence.append(0)
         # if Model.ModelSet[0]=='Planar':
@@ -118,13 +123,14 @@ class Analyze:
         #         else:
         #             influence.append(0)
         influence=np.matrix(influence)   
-        
+        print("Infuence")
         print(influence)
+        Model.influence = influence
         if flag == 1:
             #P0=P[:,0]-np.transpose(np.matmul(MR,GM[0,0]*np.transpose(influence)))
             P0=P[:,0]-np.transpose(np.matmul(M,GM[0]*np.transpose(influence)))
         
-            U_ddot[:,0]=np.transpose(np.linalg.solve(M,np.transpose(P0[0]-np.matmul(C,(U_dot[:,0]))-np.matmul(K,U[:,0]))))
+            #U_ddot[:,0]=np.transpose(np.linalg.solve(M,np.transpose(P0[0]-np.matmul(C,(U_dot[:,0]))-np.matmul(K,U[:,0]))))
 
             
             T=dt*GM.shape[0]
@@ -141,13 +147,14 @@ class Analyze:
                     np.matmul((c3*M+c5*C),U_ddot[:,i])
                 
                 U[:,i+1]=np.transpose(np.linalg.solve(Keff,np.transpose(Peff)))
+                #print(i)
                 
                 
                 U_dot[:,i+1]=c2*(U[:,i+1]-U[:,i])-c4*U_dot[:,i]-c5*U_ddot[:,i]
                 U_ddot[:,i+1]=c0*(U[:,i+1]-U[:,i])-c1*U_dot[:,i]-c3*U_ddot[:,i]
         else:
             P0 = P[:,0]
-            U_ddot[:,0]=np.transpose(np.linalg.solve(M,np.transpose(P0[0]-np.matmul(C,(U_dot[:,0]))-np.matmul(K,U[:,0]))))
+            #U_ddot[:,0]=np.transpose(np.linalg.solve(M,np.transpose(P0[0]-np.matmul(C,(U_dot[:,0]))-np.matmul(K,U[:,0]))))
             T=dt*P.shape[1]
             t=np.linspace(0,T,P.shape[1]-1)
             
@@ -162,6 +169,7 @@ class Analyze:
                 
                 print(Peff)
                 U[:,i+1]=np.transpose(np.linalg.solve(Keff,np.transpose(Peff)))
+                
                 
                 
                 U_dot[:,i+1]=c2*(U[:,i+1]-U[:,i])-c4*U_dot[:,i]-c5*U_ddot[:,i]

@@ -786,6 +786,7 @@ int PSAS::submitDynOpt(){
                                  << (double) DynamicParams[5] << ", " << (double) DynamicParams[6] << ", " << (double) DynamicParams[7] << ", " << (double) DynamicParams[8] << ", " << (double) DynamicParams[9] << "\n";
 
                 GroundMotionFile.close();
+                sourceWindow->loadGroundMotion();
 
             } else {
                 printf("Error");

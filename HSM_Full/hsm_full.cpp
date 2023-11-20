@@ -48,7 +48,10 @@ PyObject *Pyfp;
 using namespace ABElectronics_CPP_Libraries;
 
 bool useADCs = false;
-bool hardwareConnected = false;
+double SL = 1;//3.33333333333; // This is inverted
+bool hardwareConnected = true;
+bool ramping = false;
+double rampTime = 0.1;
 std::ifstream EQ("/home/pi/Desktop/RpiHSM/HSM_Full/InterpGM.txt");
 double d_prev[3]; //This list stores the last 3 values for the displacement
 double d_next; //This is the next displacement calculated by the integrator
@@ -131,6 +134,7 @@ std::ofstream ForceSlopes;
 std::ofstream LCData;
 std::ofstream ScaleData;
 std::ofstream Interlocks;
+std::ofstream pythonTimes;
 
 double EQdata;
 std::vector<double> EQ_h{0};
@@ -152,6 +156,7 @@ std::vector<double> sinForce{0};
 std::vector<double> sinForce2{0};
 std::vector<double> sinTime{0};
 std::vector<double> sinTime2{0};
+std::vector<double> pyTimes{};
 
 
 double xcur;
@@ -183,9 +188,11 @@ struct timeval tv;
 struct timeval tv1;
 struct timeval runtv;
 struct timeval signaltv;
+struct timeval tvPy;
 int done=1;
 bool cv = 1;
-double vel = .01;
+double vel = .02;
+double maxVel = .1;
 std::vector <double> ActuatorVel = {0.0, 0.0};
 double sigt = .01; //time between signals
 std::vector <double> dx = {0.0, 0.0};
@@ -236,8 +243,8 @@ double received_Disp = 0.0;
 double received_Disp2 = 0.0;
 bool sliderActive = 0;
 bool sliderActive2 = 0;
-double Pmax = 5;
-double Imax = .001;
+double Pmax = 100;
+double Imax = .1;
 double Dmax = 5;
 double maxspan = 12;
 int controlcount = 0;
@@ -361,10 +368,10 @@ bool actOneLow = false;
 bool actOneHigh = false;
 bool actTwoLow = false;
 bool actTwoHigh = false;
-int actOneLowPin = 28;
-int actOneHighPin = 24;
-int actTwoLowPin = 25;
-int actTwoHighPin = 27;
+int actOneLowPin = 24;
+int actOneHighPin = 28;
+int actTwoLowPin = 27;
+int actTwoHighPin = 25;
 bool eStopActive;
 bool firstActuatorOn = false;
 bool secondActuatorOn = false;
@@ -461,6 +468,8 @@ double wForce = .2;
 double ypForce = 0.0;
 double wForce2 = .2;
 double ypForce2 = 0.0;
+double initialForceCommand = 0.0;
+double initialDispCommand = 0.0;
 
 
 void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
@@ -471,13 +480,25 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
 
         periodic_task_init(&pinfo);
         hsm_full* plot_obj = (hsm_full*)plotter;
-
+        pthread_mutex_init(&trigger_mutex,NULL);
         //Runs Hybrid Simulation
         if (sinOn == 0){
             int i = 0;
             qDebug("%d",EQ_h.size());
 
             while (intcount < GM.size()-1 && running == 1) {
+                if (intcount == 0){
+                    std::cout << "Calibrating Forces" << "\n";
+                    plot_obj->calForce();
+                    //plot_obj->calForce2();
+                    plot_obj->setZero();
+                   //plot_obj->setZero2();
+
+
+                    //This is very specific to the 2 dof test we are running in richmond
+                    initialForceCommand = plot_obj->getForceCommand2();
+                    //initialForceCommand =-47.0;
+                }
                 gettimeofday(&signaltv, NULL);
                 loop_in_mill_beg = signaltv.tv_usec;
                 loop_in_s_beg = signaltv.tv_sec + loop_in_mill_beg/1000000.0;
@@ -619,16 +640,32 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
                             DispTimeAct2.push_back((double) time_in_s1);
                             plot_obj->YdataAct2.append(plot_obj->getActTwoDispScale() * (double) received_Disp2);
                             DispVecAct2.push_back(received_Disp2);
-                            plot_obj->YCommandAct2.append(plot_obj->getActTwoDispScale() * (double) xt[gcount-1][i]);
-                            CommandVecAct2.push_back((double) xt[gcount-1][i]);
                             plot_obj->XCommandAct2.append((double) time_in_s1);
-                            CommandTimeAct2.push_back((double) time_in_s1);
+
                             plot_obj->HystDisp2.append(time_in_s1);
                             plot_obj->loadCellData2.append(plot_obj->getActTwoForceScale() * plot_obj->getForce2());
 
-                            dispCommand2 = xt[gcount-1][i];
-                            data_to_send = (uint16_t) plot_obj->inchesToBits(2,dispCommand2);
-                            plot_obj->serialWrite(2,0,data_to_send);
+                            if(plot_obj->getControlType2() == 0){
+                                dispCommand2 = xt[gcount-1][i];
+                                data_to_send = (uint16_t) plot_obj->inchesToBits(2,dispCommand2);
+                                plot_obj->serialWrite(2,0,data_to_send);
+                                plot_obj->XCommandAct2.append((double) time_in_s1);
+                                CommandTimeAct2.push_back((double) time_in_s1);
+                                plot_obj->YCommandAct2.append(plot_obj->getActTwoDispScale() * (double)  xt[gcount-1][i]);
+                                CommandVecAct2.push_back((double) xt[gcount-1][i]);
+                            } else {
+                                //This is hard coding the rough vertical stiffness of the bridge bent and using it to send a force command
+
+                                forceCommand2 =1613.57 * xt[gcount-1][i];
+                                double double_to_send = (forceCommand2 + initialForceCommand) / forceSlope2 + zeroForce2;
+                                command = 0;
+                                //std::cout << "Sending Force Command to Act 2: " << (forceCommand2 + initialForceCommand) << "\n";
+                                plot_obj->XForceCommandAct2.append((double) time_in_s1);
+                                CommandTimeAct2.push_back((double) time_in_s1);
+                                plot_obj->YForceCommandAct2.append(plot_obj->getActTwoForceScale() * (forceCommand2 + initialForceCommand));
+                                CommandVecAct2.push_back((forceCommand2 + initialForceCommand));
+                                plot_obj->sendDouble(2,command,double_to_send);
+                            }
                         }
                     }
                 }
@@ -687,6 +724,7 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
             int actuatorSelected = plot_obj->ui->selectAct->value();
             double act1Command;
             double act2Command;
+            int sinAmpCounter = 0;
             while (sinOn == 1 && running == 1) {
 
                 //gets time
@@ -791,7 +829,7 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
                    i = 0;
                 }
 
-                j = j+1;
+                sinAmpCounter = sinAmpCounter+1;
                 //qDebug("%f",time_in_s1);
                 /*if (time_in_s1>=runaxlim){
                     std::cout<<"WHy am I not working \n";
@@ -809,7 +847,7 @@ void *simple_cyclic_task(void* plotter) //This runs a cyclic task in which
                 if (sinsweep == 1 && i*tstep>(30-2*tstep)){
                     running = 0;
                 }
-                if (amptest == 1 && slope*j*tstep>amp){
+                if (amptest == 1 && slope*sinAmpCounter*tstep>amp){
                     running = 0;
                 }
                 gettimeofday(&signaltv, NULL);
@@ -916,10 +954,13 @@ static void const_vel(hsm_full* object)
         eqp = GM[intcount];
         //fp = f_prev+df;
         //pthread_mutex_lock(&race_mutex);
-        fp = {object->getForce(),0.0};
+        //fp = {object->getForce() / (SL*SL),0.0};
+        //fp = {object->getForce() / (SL*SL),1613.57 * xn[intcount][1]/(SL * SL)};
         //pthread_mutex_unlock(&race_mutex);
         //std::cout << "got Force: " << fp[0] << "\n";
-        fp = {30.0 * xn[intcount][0], 0.0};
+        fp = {(3.3 * xn[intcount][0])/(SL * SL), 0.0};
+        //std::cout << fp[0] << "\n";
+        //fp = {(30.0 * xn[intcount][0])/(SL * SL), 1613.57 * xn[intcount][1]/(SL * SL)};
         //printf("Force Reading\n");
         //std::cout << xn[intcount] << "\n";
         //fp[1] = 3.3 * xn[intcount];
@@ -955,6 +996,7 @@ static void const_vel(hsm_full* object)
         cur_x[0] = cur_x[0]+dx[0]/nsteps;
         cur_x[1] = cur_x[1]+dx[1]/nsteps;
         xt.push_back(cur_x);
+        //std::cout << "Prediction...\n";
         //std::cout << cur_x[0] << ", " << cur_x[1] << "\n";
         gcount++;
         /*if (microcont == 1){
@@ -1126,13 +1168,19 @@ void *Time_integrator(void* data)
                 //f_p = PyLong_FromLong(fp[0]);
                 iter = PyLong_FromLong(intcount);
 
-                pythonArgument = PyTuple_New(4);
+                pythonArgument = PyTuple_New(5);
                 PyTuple_SetItem(pythonArgument, 0, Model);
-                PyTuple_SetItem(pythonArgument, 1, Pyfp);
-                PyTuple_SetItem(pythonArgument, 2, PyGM);
-                PyTuple_SetItem(pythonArgument, 3, iter);
+                PyTuple_SetItem(pythonArgument, 1, el);
+                PyTuple_SetItem(pythonArgument, 2, Pyfp);
+                PyTuple_SetItem(pythonArgument, 3, PyGM);
+                PyTuple_SetItem(pythonArgument, 4, iter);
 
-
+                pthread_mutex_lock(&race_mutex);
+                gettimeofday(&tvPy, NULL);
+                double PythonTime_in_mill1 = tvPy.tv_usec;
+                double PythonTime_in_s1 = tvPy.tv_sec + PythonTime_in_mill1/1000000.0;
+                double PythonTime_in_mill2;
+                double PythonTime_in_s2;
                 if (pModule != NULL) {
                            if (pFunc2 && PyCallable_Check(pFunc2)) {
                                    x_next2 = PyObject_CallObject(pFunc2, pythonArgument);
@@ -1145,16 +1193,23 @@ void *Time_integrator(void* data)
                                        PyArrayObject *xdNext = (PyArrayObject*) PyTuple_GetItem(x_next2,2);
                                        double* xd_next = (double*)PyArray_DATA(xNext);
                                        PyArrayObject *xddNext = (PyArrayObject*) PyTuple_GetItem(x_next2,3);
-                                       double* xdd_next = (double*)PyArray_DATA(xNext);                             
+                                       double* xdd_next = (double*)PyArray_DATA(xNext);
+                                       gettimeofday(&tvPy, NULL);
+                                       PythonTime_in_mill2 = tvPy.tv_usec;
+                                       PythonTime_in_s2 = tvPy.tv_sec + PythonTime_in_mill2/1000000.0;
+                                       std::cout << PythonTime_in_s2 - PythonTime_in_s1 << "\n";
+
+                                       pyTimes.push_back(PythonTime_in_s2 - PythonTime_in_s1);
+
                                        if (numControlDOFS == 1) {
-                                           xn.push_back({x_next[0],0.0});
+                                           xn.push_back({(SL) * x_next[0],0.0});
                                            //std::cout << "x next: " <<< "\n";
                                            xd.push_back({xd_next[0],0});
                                            xdd.push_back({xdd_next[0],0});
                                        }
 
                                        if(numControlDOFS == 2) {
-                                           xn.push_back({x_next[0],x_next[1]});
+                                           xn.push_back({(SL) *x_next[0],(SL) *x_next[1]});
                                            //std::cout << "x next: " << x_next[0] << ", " << x_next[1] << "\n";
                                            xd.push_back({xd_next[0],xd_next[1]});
                                            xdd.push_back({xdd_next[1],xdd_next[1]});
@@ -1162,27 +1217,58 @@ void *Time_integrator(void* data)
 
                                        //std::cout << "int result recieved \n";
                                        if(cv ==1){
+                                           if (ramping == true){
+                                               //This calculates the velocity based on a ramp time. Then it calculates the number of steps at that velocity
+                                               if(numControlDOFS == 2){
+                                                   dx[0] = (SL) * x_next[0] - cur_x[0];
+                                                   dx[1] = (SL) * x_next[1] - cur_x[1];
 
-                                           if(numControlDOFS == 2) {
-                                               dx[0] = x_next[0] - cur_x[0];
-                                               dx[1] = x_next[1] - cur_x[1];
-                                               //std::cout << "current x: " << cur_x[1] << "\n";
-                                               //std::cout << "dx: " << dx[0] << ", " << dx[1] << "\n";
-                                               if(abs(dx[0]) > abs(dx[1])) {
+                                                   ActuatorVel[0] = dx[0] / rampTime;
+                                                   if (ActuatorVel[0] > maxVel) {
+                                                       ActuatorVel[0] = maxVel;
+                                                   } else if (ActuatorVel[0] < -maxVel) {
+                                                       ActuatorVel[0] = -maxVel;
+                                                   }
+                                                   nsteps = abs(dx[0]/(ActuatorVel[0]*sigt));
+                                                   ActuatorVel[1] = dx[1] / rampTime;
+                                               }
+                                               if(numControlDOFS == 1) {
+                                                   //std::cout << "Only one dof\n";
+                                                   dx[0] = (SL) * x_next[0] - cur_x[0];
+                                                   ActuatorVel[0] = dx[0] / rampTime;
+                                                   if (ActuatorVel[0] > maxVel) {
+                                                       ActuatorVel[0] = maxVel;
+                                                   } else if (ActuatorVel[0] < -maxVel) {
+                                                       ActuatorVel[0] = -maxVel;
+                                                   }
+                                                   nsteps = abs(dx[0]/(ActuatorVel[0]*sigt));
+                                                   std::cout << nsteps << "\n";
+                                               }
+
+                                           }else {
+                                               //This generates points at a constant preset velocity vel. That is defined at the top. Maybe ill add an input or something
+                                               if(numControlDOFS == 2) {
+                                                   dx[0] = (SL) * x_next[0] - cur_x[0];
+                                                   dx[1] = (SL) * x_next[1] - cur_x[1];
+                                                   //std::cout << "current x: " << cur_x[1] << "\n";
+                                                   //std::cout << "dx: " << dx[0] << ", " << dx[1] << "\n";
+                                                   if(abs(dx[0]) > abs(dx[1])) {
+                                                       ActuatorVel[0] = vel;
+                                                       nsteps = abs(dx[0])/(ActuatorVel[0]*sigt);
+                                                       ActuatorVel[1] = abs(dx[1]) / (nsteps *sigt);
+                                                       //std::cout << "new velocity: " << ActuatorVel[1] << "\n";
+                                                   } else {
+                                                       ActuatorVel[1] = vel;
+                                                       nsteps = abs(dx[1])/(ActuatorVel[1]*sigt);
+                                                       ActuatorVel[0] = abs(dx[0]) / (nsteps *sigt);
+                                                   }
+                                               }
+                                               if(numControlDOFS == 1) {
+                                                   //std::cout << "Only one dof\n";
+                                                   dx[0] = (SL) * x_next[0] - cur_x[0];
                                                    ActuatorVel[0] = vel;
                                                    nsteps = abs(dx[0])/(ActuatorVel[0]*sigt);
-                                                   ActuatorVel[1] = abs(dx[1]) / (nsteps *sigt);
-                                                   //std::cout << "new velocity: " << ActuatorVel[1] << "\n";
-                                               } else {
-                                                   ActuatorVel[1] = vel;
-                                                   nsteps = abs(dx[1])/(ActuatorVel[1]*sigt);
-                                                   ActuatorVel[0] = abs(dx[0]) / (nsteps *sigt);
                                                }
-                                           }
-                                           if(numControlDOFS == 1) {
-                                               dx[0] = x_next[0] - cur_x[0];
-                                               ActuatorVel[0] = vel;
-                                               nsteps = abs(dx[0])/(ActuatorVel[0]*sigt);
                                            }
                                            //printf("%f\n",dx);
                                            //printf("%f\n",nsteps);
@@ -1195,7 +1281,7 @@ void *Time_integrator(void* data)
                                        //double t2 = tv.tv_sec + time_in_mill1/1000000.0;
 
                                        done = 1;
-                                       pthread_mutex_unlock(&race_mutex);
+
                                    }else {
                                            PyErr_Print();
                                    }
@@ -1209,7 +1295,7 @@ void *Time_integrator(void* data)
                            PyErr_Print();
                            fprintf(stderr, "Failed to load %s\n", "Time_Integrator");
                    }
-
+                pthread_mutex_unlock(&race_mutex);
                 //PyGILState_Release(state);
                 pthread_mutex_unlock(&trigger_mutex);
         }
@@ -1331,7 +1417,7 @@ hsm_full::hsm_full(QWidget *parent) :
         serialWrite(3,4,LC2Zero);
         std::cout << "Zero for LC 2 Electronically (Coarse tune): " << LC2Zero << "\n";
     }*/
-
+    loadGroundMotion();
 
     std::vector<std::vector<double>> interlockData = readFiles("Interlocks.txt");
     if (interlockData[0].size() == 1) {
@@ -1450,18 +1536,6 @@ hsm_full::hsm_full(QWidget *parent) :
 
     //qDebug("Read from Controller 2: %d",serialRead(2, 1, 0));
 
-    DynamicsFile = readFiles("InterpGM.txt");
-    if(DynamicsFile[0][0] == -1) {
-        std::cout << "Ground Motion Dynamics File not found. Make it in the Make Model menu\n";
-    } else {
-        for (int i = 0; i < DynamicsFile.size() - 1; i++){
-            GM.push_back(DynamicsFile[i][1]);
-        }
-        DynOps = DynamicsFile.back();
-        std::cout << "Dynamic Options\n " << "x Dir Scale: " << DynOps[0] << "\ny Dir Scale: " << DynOps[1] << "\nz Dir Scale:  " << DynOps[2] << "\nScale:  " << DynOps[3] << "\ndt Old:  " << DynOps[4] << "\ndt New: " <<
-                     DynOps[5] << "\nAlpha: " << DynOps[6] << "\nZeta (Damping): " << DynOps[7] << "\nDamping Mode 1: " << DynOps[8] << "\nDamping Mode 2: " << DynOps[9] << "\n";
-    }
-
 
 
    gettimeofday(&runtv, NULL);
@@ -1471,6 +1545,7 @@ hsm_full::hsm_full(QWidget *parent) :
    //calForce();
    initializeController(1);
    initializeController(2);
+
 
    /*if (microcont==1){
         zeroPoint = 2092;
@@ -1551,8 +1626,6 @@ hsm_full::hsm_full(QWidget *parent) :
     //connect(ui->IButton,&QPushButton::released,this,&hsm_full::sendI);
     //connect(ui->DButton,&QPushButton::released,this,&hsm_full::sendD);
     connect(ui->ForcePID,&QPushButton::released,this,&hsm_full::sendPIDForce);
-    connect(ui->horizontalSlider,&QSlider::sliderReleased,this,&hsm_full::sliderCommand);
-    connect(ui->SliderButton,&QPushButton::released,this,&hsm_full::activateButton);
     connect(ui->SpanButton,&QPushButton::released,this,&hsm_full::pressSpanButton);
     connect(ui->zeroButton,&QPushButton::released,this,&hsm_full::setZero);
     connect(ui->fZeroButton,&QPushButton::released,this,&hsm_full::calForce);
@@ -1569,8 +1642,6 @@ hsm_full::hsm_full(QWidget *parent) :
     connect(ui->CommandButton_2,&QPushButton::released,this,&hsm_full::sendCommand2);
     connect(ui->DispPID2,&QPushButton::released,this,&hsm_full::sendPID2);
     connect(ui->ForcePID_2,&QPushButton::released,this,&hsm_full::sendPIDForce2);
-    connect(ui->horizontalSlider_2,&QSlider::sliderReleased,this,&hsm_full::sliderCommand2);
-    connect(ui->SliderButton_2,&QPushButton::released,this,&hsm_full::activateButton2);
     connect(ui->SpanButton_2,&QPushButton::released,this,&hsm_full::pressSpanButton2);
     connect(ui->zeroButton_2,&QPushButton::released,this,&hsm_full::setZero2);
     connect(ui->fZeroButton_2,&QPushButton::released,this,&hsm_full::calForce2);
@@ -1592,7 +1663,7 @@ hsm_full::hsm_full(QWidget *parent) :
     //
 
     //ui->ControlText->setText("Disp Control");
-    ui->ControlText_2->setText("Disp Control");
+    //ui->ControlText_2->setText("Disp Control");
     ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,runaxlim);
     ui->qwtPlot->setAxisAutoScale(QwtPlot::yLeft,true);
     ui->qwtPlot_2->setAxisScale(QwtPlot::xBottom,0,runaxlimLoad);
@@ -1609,7 +1680,6 @@ hsm_full::hsm_full(QWidget *parent) :
 
     //Xdata = {0,1,2,3,4,5,6,7,8,9,10};
     //Ydata = {0,1,2,3,4,5,6,7,8,9,10};
-
 
 
 
@@ -1657,7 +1727,6 @@ int hsm_full::update()
     int ret2;
 
     pthread_mutex_init(&race_mutex,NULL);
-    pthread_mutex_init(&trigger_mutex,NULL);
 
     Py_Initialize();
     import_array();
@@ -1781,15 +1850,120 @@ int hsm_full::update()
     qDebug("Hello");
     runaxlim = 10;
     ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,10);
+    intDisp.open("SaveData/IntegratorDisp.txt",std::ofstream::out | std::ofstream::trunc);
+    int intDispCount = 0;
+    intForceResponse.open("SaveData/IntegratorForce.txt",std::ofstream::out | std::ofstream::trunc);
+    int intForceCount = 0;
+    sentCom.open("SaveData/Command.txt",std::ofstream::out | std::ofstream::trunc);
+    int sentComCount = 0;
+    sentCom2.open("SaveData/Command2.txt",std::ofstream::out | std::ofstream::trunc);
+    int sentCom2Count = 0;
+    recDisp.open("SaveData/recDisp.txt",std::ofstream::out | std::ofstream::trunc);
+    int recDispCount = 0;
+    recDisp2.open("SaveData/recDisp2.txt",std::ofstream::out | std::ofstream::trunc);
+    int recDisp2Count = 0;
+    CommandT.open("SaveData/CommandT.txt",std::ofstream::out | std::ofstream::trunc);
+    int CommandTCount = 0;
+    CommandT2.open("SaveData/CommandT2.txt",std::ofstream::out | std::ofstream::trunc);
+    int CommandT2Count = 0;
+    DispT.open("SaveData/DispT.txt",std::ofstream::out | std::ofstream::trunc);
+    int DispTCount = 0;
+    DispT2.open("SaveData/DispT2.txt",std::ofstream::out | std::ofstream::trunc);
+    int DispT2Count = 0;
+    ForceResponse.open("SaveData/recForce.txt",std::ofstream::out | std::ofstream::trunc);
+    int ForceResponseCount = 0;
+    ForceResponse2.open("SaveData/recForce2.txt",std::ofstream::out | std::ofstream::trunc);
+    int ForceResponse2Count = 0;
+
     while(running == true){
         plotcount = plotcount+1;
         if (plotcount%500000 == 0){
             //readForce(0);
-           pthread_mutex_lock(&race_mutex);
+           pthread_mutex_lock(&race_mutex);           
            this->updateLCD();
            pthread_mutex_unlock(&race_mutex);
         }
+        if (plotcount%10000000 == 0){
+           pthread_mutex_lock(&race_mutex);
+           for(int i = intDispCount ; i<xn.size() - 1; i++){
+                   intDisp << xn[i][0] << "," << xn[i][1] << "\n";
+                   intDispCount += 1;
+           }
+
+           for(int i = intForceCount ; i<force.size() - 1; i++){
+                   intForceResponse << force[i] << "\n";
+                   intForceCount += 1;
+           }
+
+           for(int i = sentComCount ; i<CommandVec.size() - 1; i++){
+                   sentCom << CommandVec[i] << "\n";
+                   sentComCount += 1;
+           }
+
+
+           for(int i = sentCom2Count ; i<CommandVecAct2.size()-1; i++){
+                   sentCom2 << CommandVecAct2[i] << "\n";
+                   sentCom2Count+=1;
+           }
+
+           for(int i = recDispCount ; i<DispVec.size()-1; i++){
+                   recDisp << DispVec[i] << "\n";
+                   recDispCount +=1;
+           }
+
+           for(int i = recDisp2Count ; i<DispVecAct2.size()-1; i++){
+                   recDisp2 << DispVecAct2[i] << "\n";
+                   recDisp2Count += 1;
+           }
+
+           for(int i = CommandTCount ; i<CommandTime.size()-1; i++){
+                   CommandT << CommandTime[i] << "\n";
+                   CommandTCount += 1;
+           }
+
+           for(int i = CommandT2Count ; i<CommandTimeAct2.size()-1; i++){
+                   CommandT2 << CommandTimeAct2[i] << "\n";
+                   CommandT2Count += 1;
+           }
+
+           for(int i = DispTCount ; i<DispTime.size()-1; i++){
+                   DispT << DispTime[i] << "\n";
+                   DispTCount += 1;
+           }
+
+
+           for(int i = DispT2Count ; i<DispTimeAct2.size()-1; i++){
+                   DispT2 << DispTimeAct2[i] << "\n";
+                   DispT2Count += 1;
+           }
+
+
+           for(int i=ForceResponseCount; i < ForceVec.size()-1;i++) {
+               ForceResponse << ForceVec[i] << "\n";
+               ForceResponseCount += 1;
+           }
+
+
+           for(int i=ForceResponse2Count; i < ForceVecAct2.size()-1;i++) {
+               ForceResponse2 << ForceVecAct2[i] << "\n";
+               ForceResponse2Count += 1;
+           }
+           pthread_mutex_unlock(&race_mutex);
+        }
     }
+    intDisp.close();
+    intForceResponse.close();
+    sentCom.close();
+    sentCom2.close();
+    recDisp.close();
+    recDisp2.close();
+    CommandT.close();
+    CommandT2.close();
+    DispT.close();
+    DispT2.close();
+    ForceResponse.close();
+    ForceResponse2.close();
+
     /*while(running == true){
         plotcount = plotcount+1;
         if (plotcount%1000000 == 0){
@@ -1956,10 +2130,11 @@ void hsm_full::stiffTest()
            serialWrite(channel,0,data_to_send); //I will need to think about how to incorporate the changes in span and zeros to the write command
 
            if (channel == 1) {
-               dispCommand =((double) startCommand + receivedToInches(channel,A));
+               dispCommand =receivedToInches(channel,(inchesToBits(channel, startCommand) + A));
+               //std::cout << startCommand << ", " << zeroPoint_in << ", " << receivedToInches(channel,A);
                stiffnessvec.push_back(received_Force);
            } if (channel == 2) {
-               dispCommand2 = ((double) startCommand + receivedToInches(channel,A));
+               dispCommand2 =receivedToInches(channel,(inchesToBits(channel, startCommand) + A));
                stiffnessvec.push_back(received_Force2);
            }
            this->updateLCD();
@@ -1970,10 +2145,10 @@ void hsm_full::stiffTest()
            qDebug("%d",index);
            readForce(channel - 1);
            if (channel == 1) {
-               dispCommand =((double) startCommand + receivedToInches(channel,A));
+               dispCommand =receivedToInches(channel,(inchesToBits(channel, startCommand) + A));
                stiffnessvec.push_back(received_Force);
            } if (channel == 2) {
-               dispCommand2 = ((double) startCommand + receivedToInches(channel,A));
+               dispCommand2 =receivedToInches(channel,(inchesToBits(channel, startCommand) + A));
                stiffnessvec.push_back(received_Force2);
            }
            stiffdispvec.push_back((double) startCommand + receivedToInches(channel,A));
@@ -1989,10 +2164,10 @@ void hsm_full::stiffTest()
            qDebug("%d",index);
            readForce(channel - 1);
            if (channel == 1) {
-               dispCommand =((double) startCommand + receivedToInches(channel,A));
+               dispCommand =receivedToInches(channel,(inchesToBits(channel, startCommand) + A));
                stiffnessvec.push_back(received_Force);
            } if (channel == 2) {
-               dispCommand2 = ((double) startCommand + receivedToInches(channel,A));
+               dispCommand2 =receivedToInches(channel,(inchesToBits(channel, startCommand) + A));
                stiffnessvec.push_back(received_Force2);
            }
            stiffdispvec.push_back((double) startCommand + receivedToInches(channel,A));
@@ -2041,7 +2216,7 @@ void hsm_full::save()
     setvbuf (stdout, NULL, _IONBF, 0);
     intDisp.open("SaveData/IntegratorDisp.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Integrator Disp\n");
-    for(int i = 0 ; i<xn.size()-5; i++){
+    for(int i = 0 ; i<xn.size(); i++){
             std::cout << i << "\n";
             intDisp << xn[i][0] << "," << xn[i][1] << "\n";
             //printf("%d\n",i);
@@ -2050,7 +2225,7 @@ void hsm_full::save()
 
     intForceResponse.open("SaveData/IntegratorForce.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving force\n");
-    for(int i = 0 ; i<force.size()+1; i++){
+    for(int i = 0 ; i<force.size(); i++){
             intForceResponse << force[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2066,7 +2241,7 @@ void hsm_full::save()
 
     sentCom2.open("SaveData/Command2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Commands x\n");
-    for(int i = 0 ; i<CommandVecAct2.size()-5; i++){
+    for(int i = 0 ; i<CommandVecAct2.size(); i++){
             sentCom2 << CommandVecAct2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2074,7 +2249,7 @@ void hsm_full::save()
 
     recDisp.open("SaveData/recDisp.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Recieved Disp x\n");
-    for(int i = 0 ; i<DispVec.size()-5; i++){
+    for(int i = 0 ; i<DispVec.size(); i++){
             recDisp << DispVec[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2082,7 +2257,7 @@ void hsm_full::save()
 
     recDisp2.open("SaveData/recDisp2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Recieved Disp 2 x\n");
-    for(int i = 0 ; i<DispVecAct2.size()-5; i++){
+    for(int i = 0 ; i<DispVecAct2.size(); i++){
             recDisp2 << DispVecAct2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2091,7 +2266,7 @@ void hsm_full::save()
 
     CommandT.open("SaveData/CommandT.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Command Time x\n");
-    for(int i = 0 ; i<CommandTime.size()-5; i++){
+    for(int i = 0 ; i<CommandTime.size(); i++){
             CommandT << CommandTime[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2099,7 +2274,7 @@ void hsm_full::save()
 
     CommandT2.open("SaveData/CommandT2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Command Time x\n");
-    for(int i = 0 ; i<CommandTimeAct2.size()-5; i++){
+    for(int i = 0 ; i<CommandTimeAct2.size(); i++){
             CommandT2 << CommandTimeAct2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2107,7 +2282,7 @@ void hsm_full::save()
 
     DispT.open("SaveData/DispT.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Recieved Disp Time x\n");
-    for(int i = 0 ; i<DispTime.size()-5; i++){
+    for(int i = 0 ; i<DispTime.size(); i++){
             DispT << DispTime[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2115,7 +2290,7 @@ void hsm_full::save()
 
     DispT2.open("SaveData/DispT2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Recieved Disp Time 2 x\n");
-    for(int i = 0 ; i<DispTimeAct2.size()-5; i++){
+    for(int i = 0 ; i<DispTimeAct2.size(); i++){
             DispT2 << DispTimeAct2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2123,14 +2298,14 @@ void hsm_full::save()
 
     ForceResponse.open("SaveData/recForce.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving received Force Vector");
-    for(int i=0; i < ForceVec.size()-1;i++) {
+    for(int i=0; i < ForceVec.size();i++) {
         ForceResponse << ForceVec[i] << "\n";
     }
     ForceResponse.close();
 
     ForceResponse2.open("SaveData/recForce2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving received Force Vector");
-    for(int i=0; i < ForceVecAct2.size()-1;i++) {
+    for(int i=0; i < ForceVecAct2.size();i++) {
         ForceResponse2 << ForceVecAct2[i] << "\n";
     }
     ForceResponse2.close();
@@ -2138,7 +2313,7 @@ void hsm_full::save()
 
     runningCommand.open("SaveData/runningCommand.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Commands x\n");
-    for(int i = 0 ; i<runCommand.size()-1; i++){
+    for(int i = 0 ; i<runCommand.size()+1; i++){
             runningCommand << runCommand[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2146,7 +2321,7 @@ void hsm_full::save()
 
     runningCommand2.open("SaveData/runningCommand2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Commands x\n");
-    for(int i = 0 ; i<runCommand2.size()-5; i++){
+    for(int i = 0 ; i<runCommand2.size()+1; i++){
             runningCommand2 << runCommand2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2154,7 +2329,7 @@ void hsm_full::save()
 
     runningForceCommand.open("SaveData/runningForceCommand.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Commands x\n");
-    for(int i = 0 ; i<runForceCommand.size()-1; i++){
+    for(int i = 0 ; i<runForceCommand.size()+1; i++){
             runningForceCommand << runForceCommand[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2162,15 +2337,31 @@ void hsm_full::save()
 
     runningForceCommand2.open("SaveData/runningForceCommand2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Commands x\n");
-    for(int i = 0 ; i<runForceCommand2.size()-1; i++){
+    for(int i = 0 ; i<runForceCommand2.size(); i++){
             runningForceCommand2 << runForceCommand2[i] << "\n";
             //printf("%d\n",i);
     }
     runningForceCommand2.close();
 
+    runningForce.open("SaveData/runningForce.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Running Force x\n");
+    for(int i = 0 ; i<runForce.size()+1; i++){
+            runningForce << runForce[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningForce.close();
+
+    runningForce2.open("SaveData/runningForce2.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Running Force 2 x\n");
+    for(int i = 0 ; i<runForce2.size(); i++){
+            runningForce2 << runForce2[i] << "\n";
+            //printf("%d\n",i);
+    }
+    runningForce2.close();
+
     runningTime.open("SaveData/runningTime.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Time x\n");
-    for(int i = 0 ; i<runTime.size()-1; i++){
+    for(int i = 0 ; i<runTime.size(); i++){
             runningTime << runTime[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2178,7 +2369,7 @@ void hsm_full::save()
 
     runningTime2.open("SaveData/runningTime2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Time x\n");
-    for(int i = 0 ; i<runTime2.size()-1; i++){
+    for(int i = 0 ; i<runTime2.size(); i++){
             runningTime2 << runTime2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2186,7 +2377,7 @@ void hsm_full::save()
 
     runningFeedback.open("SaveData/runningFeedback.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Disp Feedback x\n");
-    for(int i = 0 ; i<runFeedback.size()-1; i++){
+    for(int i = 0 ; i<runFeedback.size(); i++){
             runningFeedback << runFeedback[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2194,7 +2385,7 @@ void hsm_full::save()
 
     runningFeedback2.open("SaveData/runningFeedback2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Running Disp Feedback x\n");
-    for(int i = 0 ; i<runFeedback2.size()-1; i++){
+    for(int i = 0 ; i<runFeedback2.size(); i++){
             runningFeedback2 << runFeedback2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2203,7 +2394,7 @@ void hsm_full::save()
     if (xd[0].size()>1){
         integratorIndex.open("SaveData/integratorIndex.txt",std::ofstream::out | std::ofstream::trunc);
         printf("Saving Integrator Index %d\n",intIndex.size());
-        for(int i = 0 ; i<intIndex.size()-1; i++){
+        for(int i = 0 ; i<intIndex.size(); i++){
                 integratorIndex << intIndex[i] << "\n";
                 //printf("%d\n",i);
         }
@@ -2212,7 +2403,7 @@ void hsm_full::save()
 
         calcVelocity.open("SaveData/calcVelocity.txt",std::ofstream::out | std::ofstream::trunc);
         printf("Saving Calculated Velocity\n");
-                for(int i = 0 ; i<xd[0].size()-1; i++){
+                for(int i = 0 ; i<xd[0].size(); i++){
                         calcVelocity << xd[0][i] << "," << xd[1][i] << "\n";
                         //printf("%d\n",i);
                 }
@@ -2220,7 +2411,7 @@ void hsm_full::save()
 
         calcAcc.open("SaveData/calcAcc.txt",std::ofstream::out | std::ofstream::trunc);
         printf("Saving Calculated Acceleration\n");
-        for(int i = 0 ; i<xdd[0].size()-1; i++){
+        for(int i = 0 ; i<xdd[0].size(); i++){
                 calcAcc << xdd[0][i] << "," << xdd[1][i] << "\n";
                 //printf("%d\n",i);
         }
@@ -2239,7 +2430,7 @@ void hsm_full::save()
 
     SinCommandFile2.open("SaveData/SinCommand2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Commands\n");
-    for(int i = 0 ; i<sinCommand2.size()+1; i++){
+    for(int i = 0 ; i<sinCommand2.size(); i++){
             SinCommandFile2 << sinCommand2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2247,7 +2438,7 @@ void hsm_full::save()
 
     SinResponseFile.open("SaveData/SinResponse.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Disp Response\n");
-    for(int i = 0 ; i<sinResponse.size()+1; i++){
+    for(int i = 0 ; i<sinResponse.size(); i++){
             SinResponseFile << sinResponse[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2255,7 +2446,7 @@ void hsm_full::save()
 
     SinResponseFile2.open("SaveData/SinResponse2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Disp Response\n");
-    for(int i = 0 ; i<sinResponse2.size()+1; i++){
+    for(int i = 0 ; i<sinResponse2.size(); i++){
             SinResponseFile2 << sinResponse2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2263,7 +2454,7 @@ void hsm_full::save()
 
     SinForceFile.open("SaveData/SinForce.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Force Response\n");
-    for(int i = 0 ; i<sinForce.size()+1; i++){
+    for(int i = 0 ; i<sinForce.size(); i++){
             SinForceFile << sinForce[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2271,7 +2462,7 @@ void hsm_full::save()
 
     SinForceFile2.open("SaveData/SinForce2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Force Response\n");
-    for(int i = 0 ; i<sinForce2.size()+1; i++){
+    for(int i = 0 ; i<sinForce2.size(); i++){
             SinForceFile2 << sinForce2[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2279,7 +2470,7 @@ void hsm_full::save()
 
     SinTimeFile.open("SaveData/SinTime.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Time\n");
-    for(int i = 0 ; i<sinTime.size()+1; i++){
+    for(int i = 0 ; i<sinTime.size(); i++){
             SinTimeFile << sinTime[i] << "\n";
             //printf("%d\n",i);
     }
@@ -2287,24 +2478,32 @@ void hsm_full::save()
 
     SinTimeFile2.open("SaveData/SinTime2.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Sin Time\n");
-    for(int i = 0 ; i<sinTime2.size()+1; i++){
+    for(int i = 0 ; i<sinTime2.size(); i++){
             SinTimeFile2 << sinTime2[i] << "\n";
             //printf("%d\n",i);
     }
     SinTimeFile2.close();
 
+    pythonTimes.open("SaveData/pyTimes.txt",std::ofstream::out | std::ofstream::trunc);
+    printf("Saving Python Times\n");
+    for(int i = 0 ; i<pyTimes.size(); i++){
+            pythonTimes << pyTimes[i] << "\n";
+            //printf("%d\n",i);
+    }
+    pythonTimes.close();
+
 
     if(logcontrolloops == 1){
     controlLoops.open("SaveData/controlLoops.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving control Loops x\n");
-            for(int i = 0 ; i<loops.size()+1; i++){
+            for(int i = 0 ; i<loops.size(); i++){
                     controlLoops << loops[i] << "\n";
                     //printf("%d\n",i);
             }
             controlLoops.close();
     signalLoopTime.open("SaveData/signalLoopTime.txt",std::ofstream::out | std::ofstream::trunc);
     printf("Saving Signal Loop Time x\n");
-            for(int i = 0 ; i<signalLoops.size()+1; i++){
+            for(int i = 0 ; i<signalLoops.size(); i++){
                     signalLoopTime << signalLoops[i] << "\n";
             }
             signalLoopTime.close();
@@ -2406,35 +2605,8 @@ void hsm_full::sendD(){
     serialWrite(1,command,data_to_send);
 }*/
 
-void hsm_full::sliderCommand(){
-    /*setvbuf (stdout, NULL, _IONBF, 0);
-    if (sliderActive == 1) {
-        slideCommand = ui->horizontalSlider->value();
-        printf("%f",slideCommand);
-        command = 0;
-        command = command<<12;
-        data_to_send = slideCommand;
-        if (microcont == 1){
-            data_to_send = data_to_send | command;
-            wiringPiI2CWriteReg16(fd,0x00,data_to_send);
-        }else{
-            data_to_send = std::min(3300.0,round(3.22*slideCommand+(ogZero-1650)));
-            //expi.dac_set_raw(data_to_send,2, 2);
-        }
-    }*/
-}
 
-void hsm_full::activateButton(){
-    setvbuf (stdout, NULL, _IONBF, 0);
-    if (sliderActive == 0){
-        sliderActive = 1;
-        ui->SliderButton->setText("De-Activate");
-    }
-    else if (sliderActive == 1){
-        sliderActive = 0;
-        ui->SliderButton->setText("Activate");
-    }
-}
+
 
 void hsm_full::pressSpanButton() {
     double targetSpan = ui -> SpanInput -> value();
@@ -2480,7 +2652,12 @@ void hsm_full::startControl(){
     if (controller == 0){
         //ui->StartControl->setText("Stop Controller");
         controller = 1;
-        dispCommand = received_Disp;
+        if(CT1 == 0) {
+            dispCommand = received_Disp;
+        }else {
+            forceCommand = received_Force;
+        }
+
     }else{
         //ui->StartControl->setText("Start Controller");
         controller = 0;
@@ -2583,16 +2760,13 @@ void hsm_full::useFirstActuator() {
         ui->SpanButton->setEnabled(false);
         ui->CommandButton->setEnabled(false);
         ui->CommandInput->setEnabled(false);
-        ui->CommandNum->setEnabled(false);
         ui->CurPos->setEnabled(false);
         ui->CurSpan->setEnabled(false);
-        ui->SliderButton->setEnabled(false);
         ui->SpanInput->setEnabled(false);
         ui->Offset->setEnabled(false);
         ui->zeroButton->setEnabled(false);
         ui->Stiffness->setEnabled(false);
         ui->fZeroButton->setEnabled(false);
-        ui->horizontalSlider->setEnabled(false);
         ui->Stiffness->setEnabled(false);
         ui->label_2->setEnabled(false);
         ui->label_3->setEnabled(false);
@@ -2654,16 +2828,13 @@ void hsm_full::useFirstActuator() {
         ui->SpanButton->setEnabled(true);
         ui->CommandButton->setEnabled(true);
         ui->CommandInput->setEnabled(true);
-        ui->CommandNum->setEnabled(true);
         ui->CurPos->setEnabled(true);
         ui->CurSpan->setEnabled(true);
-        ui->SliderButton->setEnabled(true);
         ui->SpanInput->setEnabled(true);
         ui->Offset->setEnabled(true);
         ui->zeroButton->setEnabled(true);
         ui->Stiffness->setEnabled(true);
         ui->fZeroButton->setEnabled(true);
-        ui->horizontalSlider->setEnabled(true);
         ui->Stiffness->setEnabled(true);
         ui->label_2->setEnabled(true);
         ui->label_3->setEnabled(true);
@@ -2719,6 +2890,7 @@ void hsm_full::useSecondActuator() {
         ui->label_39->setEnabled(false);
         ui->label_40->setEnabled(false);
         ui->Act2HighOn->setEnabled(false);
+        ui->approxZero_2->setEnabled(false);
         ui->Act2LowOn->setEnabled(false);
         ui->ActTwoHighButton->setEnabled(false);
         ui->ActTwoLowButton->setEnabled(false);
@@ -2726,16 +2898,13 @@ void hsm_full::useSecondActuator() {
         ui->SpanButton_2->setEnabled(false);
         ui->CommandButton_2->setEnabled(false);
         ui->CommandInput_2->setEnabled(false);
-        ui->CommandNum_2->setEnabled(false);
         ui->CurPos_2->setEnabled(false);
         ui->CurSpan_2->setEnabled(false);
-        ui->SliderButton_2->setEnabled(false);
         ui->SpanInput_2->setEnabled(false);
         ui->Offset_2->setEnabled(false);
         ui->zeroButton_2->setEnabled(false);
         ui->Stiffness_2->setEnabled(false);
         ui->fZeroButton_2->setEnabled(false);
-        ui->horizontalSlider_2->setEnabled(false);
         ui->Stiffness_2->setEnabled(false);
         ui->label_11->setEnabled(false);
         ui->label_12->setEnabled(false);
@@ -2745,6 +2914,8 @@ void hsm_full::useSecondActuator() {
         ui->label_16->setEnabled(false);
         ui->label_17->setEnabled(false);
         ui->label_23->setEnabled(false);
+        ui->label_54->setEnabled(false);
+        ui->label_55->setEnabled(false);
         /*ui->LC2Int->setEnabled(false);
         ui->LC2Button->setEnabled(false);*/
         ui->DispPID2->setEnabled(false);
@@ -2786,6 +2957,7 @@ void hsm_full::useSecondActuator() {
         ui->label_39->setEnabled(true);
         ui->label_40->setEnabled(true);
         ui->Act2HighOn->setEnabled(true);
+        ui->approxZero_2->setEnabled(true);
         ui->Act2LowOn->setEnabled(true);
         ui->ActTwoHighButton->setEnabled(true);
         ui->ActTwoLowButton->setEnabled(true);
@@ -2793,16 +2965,13 @@ void hsm_full::useSecondActuator() {
         ui->SpanButton_2->setEnabled(true);
         ui->CommandButton_2->setEnabled(true);
         ui->CommandInput_2->setEnabled(true);
-        ui->CommandNum_2->setEnabled(true);
         ui->CurPos_2->setEnabled(true);
         ui->CurSpan_2->setEnabled(true);
-        ui->SliderButton_2->setEnabled(true);
         ui->SpanInput_2->setEnabled(true);
         ui->Offset_2->setEnabled(true);
         ui->zeroButton_2->setEnabled(true);
         ui->Stiffness_2->setEnabled(true);
         ui->fZeroButton_2->setEnabled(true);
-        ui->horizontalSlider_2->setEnabled(true);
         ui->Stiffness_2->setEnabled(true);
         ui->label_11->setEnabled(true);
         ui->label_12->setEnabled(true);
@@ -2812,6 +2981,8 @@ void hsm_full::useSecondActuator() {
         ui->label_16->setEnabled(true);
         ui->label_17->setEnabled(true);
         ui->label_23->setEnabled(true);
+        ui->label_54->setEnabled(true);
+        ui->label_55->setEnabled(true);
         /*ui->LC2Int->setEnabled(true);
         ui->LC2Button->setEnabled(true);*/
         ui->DispPID2->setEnabled(true);
@@ -2883,13 +3054,13 @@ void hsm_full::sendPID2(){
     ui->DInputDisp2->setValue(DCommand2);
     command = 2;
     data_to_send = std::min(4095.0,round(PCommand2/Pmax*4095));
-    serialWrite(1,command,data_to_send);
+    serialWrite(2,command,data_to_send);
     data_to_send = std::min(4095.0,round(ICommand2/Imax*4095));
     command = 2;
-    serialWrite(1,command,data_to_send);
+    serialWrite(2,command,data_to_send);
     command = 2;
     data_to_send = std::min(4095.0,round(DCommand2/Dmax*4095));
-    serialWrite(1,command,data_to_send);
+    serialWrite(2,command,data_to_send);
 }
 
 void hsm_full::sendPIDForce2(){
@@ -2902,44 +3073,15 @@ void hsm_full::sendPIDForce2(){
     ui->DInputForce2->setValue(DCommand2);
     command = 3;
     data_to_send = std::min(4095.0,round(PCommand2/Pmax*4095));
-    serialWrite(1,command,data_to_send);
+    serialWrite(2,command,data_to_send);
     data_to_send = std::min(4095.0,round(ICommand2/Imax*4095));
     command = 3;
-    serialWrite(1,command,data_to_send);
+    serialWrite(2,command,data_to_send);
     command = 3;
     data_to_send = std::min(4095.0,round(DCommand2/Dmax*4095));
-    serialWrite(1,command,data_to_send);
+    serialWrite(2,command,data_to_send);
 }
 
-void hsm_full::sliderCommand2(){
-    /*setvbuf (stdout, NULL, _IONBF, 0);
-    if (sliderActive == 1) {
-        slideCommand = ui->horizontalSlider->value();
-        printf("%f",slideCommand);
-        command = 0;
-        command = command<<12;
-        data_to_send = slideCommand;
-        if (microcont == 1){
-            data_to_send = data_to_send | command;
-            wiringPiI2CWriteReg16(fd,0x00,data_to_send);
-        }else{
-            data_to_send = std::min(3300.0,round(3.22*slideCommand+(ogZero-1650)));
-            //expi.dac_set_raw(data_to_send,2, 2);
-        }
-    }*/
-}
-
-void hsm_full::activateButton2(){
-    setvbuf (stdout, NULL, _IONBF, 0);
-    if (sliderActive2 == 0){
-        sliderActive2 = 1;
-        ui->SliderButton_2->setText("De-Activate");
-    }
-    else if (sliderActive2 == 1){
-        sliderActive2 = 0;
-        ui->SliderButton_2->setText("Activate");
-    }
-}
 
 void hsm_full::pressSpanButton2() {
     double targetSpan = ui -> SpanInput_2 -> value();
@@ -2984,6 +3126,12 @@ void hsm_full::startControl2(){
     if (controller2 == 0){
        // ui->StartControl->setText("Stop Controller 2");
         controller2 = 1;
+        if(CT2 == 0) {
+            dispCommand2 = received_Disp2;
+        }else {
+            forceCommand2 = received_Force2;
+        }
+
     }else{
         controller2 = 0;
         //ui->StartControl->setText("Start Controller 2");
@@ -3090,10 +3238,8 @@ void hsm_full::updateLCD(){
         if(firstActuatorOn) {
             readForce(0);
             ui->Force->display(received_Force);
-
             ui->TrueForce->display(received_Force + zeroForce);
             ui->CurPos->display(received_Disp);
-            ui->CommandNum->display(ui->horizontalSlider->value());
             SerialDisp = serialRead(1, 1, 0);
             //std::cout << SerialDisp << "\n";
             //SerialDisp = 0;
@@ -3149,7 +3295,6 @@ void hsm_full::updateLCD(){
             ui->Force_2->display(received_Force2);
             ui->TrueForce_2->display(received_Force2 + zeroForce2);
             ui->CurPos_2->display(received_Disp2);
-            ui->CommandNum_2->display(ui->horizontalSlider_2->value());
 
             runCommand2.erase(runCommand2.begin());
             runCommand2.push_back(dispCommand2);
@@ -3157,7 +3302,7 @@ void hsm_full::updateLCD(){
             runForceCommand2.push_back(forceCommand2);
             runFeedback2.erase(runFeedback.begin());
             runFeedback2.push_back(received_Disp2);
-            runForce2.erase(runForce.begin());
+            runForce2.erase(runForce2.begin());
             runForce2.push_back(received_Force2);
             runTime2.erase(runTime.begin());
             runTime2.push_back(runtime_in_s);
@@ -3169,6 +3314,9 @@ void hsm_full::updateLCD(){
 
     if(running == 1) {
         if (firstActuatorOn) {
+            ui->Force->display(received_Force);
+            ui->TrueForce->display(received_Force + zeroForce);
+            ui->CurPos->display(received_Disp);
             if(Xdata.size() > 0){
                 runtime_in_s = Xdata.back();
             } else {
@@ -3176,6 +3324,9 @@ void hsm_full::updateLCD(){
             }
         }
         if (secondActuatorOn) {
+            ui->Force_2->display(received_Force2);
+            ui->TrueForce_2->display(received_Force2 + zeroForce2);
+            ui->CurPos_2->display(received_Disp2);
             if(XdataAct2.size() > 0) {
                 runtime_in_s = XdataAct2.back();
             } else {
@@ -3195,6 +3346,8 @@ void hsm_full::updateLCD(){
         YCommand = {};
         XdataAct2 = {};
         YdataAct2 = {};
+        XCommandAct2 = {};
+        YCommandAct2 = {};
         runaxlim = runaxlim+dispPlotRefresh;
     }
 
@@ -3205,6 +3358,10 @@ void hsm_full::updateLCD(){
         loadCellData2 = {};
         HystDisp1 = {};
         HystDisp2 = {};
+        XForceCommand = {};
+        YForceCommand = {};
+        XForceCommandAct2 = {};
+        YForceCommandAct2 = {};
         runaxlimLoad = runaxlimLoad+plotRefresh;
     }
 
@@ -4080,6 +4237,7 @@ double hsm_full::receivedToInches(int channel, int dataInBits) {
     double inches;
     double spanZeroPoint;
     double zPoint_in;
+    double dataInBits_double;
     std::vector<double> Slopes;
     std::vector<double> Intercepts;
     std::vector<double> potIn;
@@ -4129,33 +4287,34 @@ double hsm_full::receivedToInches(int channel, int dataInBits) {
     }*/
     //std::cout << spanIntercept << "    " << spanSlope << "     " << diffGain << "      " << zeroVol << "\n";
     //std::cout << dataInBits << "\n";
-    dataInBits = ((double) dataInBits - sInter) / sSlope;//((((dataInBits - spanIntercept) / spanSlope) - calIntercept) / calSlope * (1 / inchSlope)) / 1.057;
-    dataInBits = (dataInBits * dGain + dIntercept) + zVol;
+    dataInBits_double = ((double) dataInBits - sInter) / sSlope;//((((dataInBits - spanIntercept) / spanSlope) - calIntercept) / calSlope * (1 / inchSlope)) / 1.057;
+    dataInBits_double = (dataInBits_double * dGain + dIntercept) + zVol;
 
     //dataInBits = dataInBits - 65;
-    //std::cout << dataInBits << "\n";
+    //std::cout << dataInBits_double << "\n";
 
-    if (dataInBits < potTrue[1]) {
-        inches = (dataInBits - Intercepts[0]) / Slopes[0];
-    } else if (dataInBits < potTrue[2]) {
-        inches = (dataInBits - Intercepts[1]) / Slopes[1];
-    } else if (dataInBits < potTrue[3]) {
-        inches = (dataInBits - Intercepts[2]) / Slopes[2];
-    } else if (dataInBits < potTrue[4]) {
-        inches = (dataInBits - Intercepts[3]) / Slopes[3];
-    } else if (dataInBits < potTrue[5]) {
-        inches = (dataInBits - Intercepts[4]) / Slopes[4];
-    } else if (dataInBits < potTrue[6]) {
-        inches = (dataInBits - Intercepts[5]) / Slopes[5];
-    } else if (dataInBits < potTrue[7]) {
-        inches = (dataInBits - Intercepts[6]) / Slopes[6];
-    } else if (dataInBits < potTrue[8]) {
-        inches = (dataInBits - Intercepts[7]) / Slopes[7];
+    if (dataInBits_double < potTrue[1]) {
+        inches = (dataInBits_double - Intercepts[0]) / Slopes[0];
+    } else if (dataInBits_double < potTrue[2]) {
+        inches = (dataInBits_double - Intercepts[1]) / Slopes[1];
+    } else if (dataInBits_double < potTrue[3]) {
+        inches = (dataInBits_double - Intercepts[2]) / Slopes[2];
+    } else if (dataInBits_double < potTrue[4]) {
+        inches = (dataInBits_double - Intercepts[3]) / Slopes[3];
+    } else if (dataInBits_double < potTrue[5]) {
+        inches = (dataInBits_double - Intercepts[4]) / Slopes[4];
+    } else if (dataInBits_double < potTrue[6]) {
+        inches = (dataInBits_double - Intercepts[5]) / Slopes[5];
+    } else if (dataInBits_double < potTrue[7]) {
+        inches = (dataInBits_double - Intercepts[6]) / Slopes[6];
+    } else if (dataInBits_double < potTrue[8]) {
+        inches = (dataInBits_double - Intercepts[7]) / Slopes[7];
     } else {
-        inches = (dataInBits - Intercepts[8]) / Slopes[8];
+        inches = (dataInBits_double - Intercepts[8]) / Slopes[8];
     }
     //std::cout << "inches: " << inches << "\n";
     inches = inches - zPoint_in;
+    //std::cout << inches << "\n";
     return inches;
 }
 
@@ -4387,6 +4546,7 @@ void hsm_full::readAllFilesAndCalibrate() {
         }
         std::cout << "Sending to Controller 2: "<< totSpan2 << "\n";
         spanCommand(2,totSpan2, 0);
+
     }
 
 }
@@ -4678,6 +4838,7 @@ void hsm_full::loadActuators() {
 
 double hsm_full::getForce() {
     readForce(0);
+    //std::cout <<received_Force << "\n";
     return received_Force;
 }
 
@@ -4747,7 +4908,7 @@ void hsm_full::initializeController(int channel) {
         if (CT2 == 0) {
             ui->ControlText_2->setText("Disp Control");
             ui->SwitchControlButton_2->setText("Switch to Force Control");
-        } else if (CT1 == 1){
+        } else if (CT2 == 1){
             ui->SwitchControlButton_2->setText("Switch to Disp Control");
             ui->ControlText_2->setText("Force Control");
         }
@@ -4872,4 +5033,18 @@ int hsm_full::getControlType() {
 }
 int hsm_full::getControlType2() {
     return CT2;
+}
+
+void hsm_full::loadGroundMotion() {
+    DynamicsFile = readFiles("InterpGM.txt");
+    if(DynamicsFile[0][0] == -1) {
+        std::cout << "Ground Motion Dynamics File not found. Make it in the Make Model menu\n";
+    } else {
+        for (int i = 0; i < DynamicsFile.size() - 1; i++){
+            GM.push_back(DynamicsFile[i][1]);
+        }
+        DynOps = DynamicsFile.back();
+        std::cout << "Dynamic Options\n " << "x Dir Scale: " << DynOps[0] << "\ny Dir Scale: " << DynOps[1] << "\nz Dir Scale:  " << DynOps[2] << "\nScale:  " << DynOps[3] << "\ndt Old:  " << DynOps[4] << "\ndt New: " <<
+                     DynOps[5] << "\nAlpha: " << DynOps[6] << "\nZeta (Damping): " << DynOps[7] << "\nDamping Mode 1: " << DynOps[8] << "\nDamping Mode 2: " << DynOps[9] << "\n";
+    }
 }

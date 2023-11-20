@@ -93,6 +93,7 @@ public slots:
     double getActTwoDispScale();
     double getActOneForceScale();
     double getActTwoForceScale();
+    void loadGroundMotion();
 
 
 
@@ -102,8 +103,6 @@ public slots:
     void sendPIDForce();
     //void sendI();
     //void sendD();
-    void sliderCommand();
-    void activateButton();
     void pressSpanButton();
     void setZero();
     void startControl();
@@ -119,8 +118,6 @@ public slots:
     void sendCommand2();
     void sendPID2();
     void sendPIDForce2();
-    void sliderCommand2();
-    void activateButton2();
     void pressSpanButton2();
     void setZero2();
     void startControl2();
@@ -296,7 +293,7 @@ public slots:
     void potCal();
     void activatePotCal();
     double BitToInch(int bitVal);
-    void loadCal();
+    //void loadCal();
 
 protected:
     inline void closeEvent(QCloseEvent *event) override
@@ -377,6 +374,7 @@ extern std::vector <double> potDiff2;
 extern std::vector <double> origSlopes2;
 extern std::vector <double> origIntercepts2;
 extern std::vector <double> zeroData2;
+extern std::vector<double> pyTimes;
 extern double diffGain;
 extern double diffGain2;
 extern double diffIntercept;

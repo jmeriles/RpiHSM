@@ -33,9 +33,6 @@ public:
     QDoubleSpinBox *setTotSpan;
     QLabel *label;
     QLabel *label_2;
-    QSpinBox *selectLoadCell;
-    QPushButton *calibrateLoadCell;
-    QLabel *label_3;
     QSpinBox *ControllerSelect;
     QLabel *label_4;
 
@@ -70,19 +67,6 @@ public:
         label_2 = new QLabel(SpanCalibration);
         label_2->setObjectName(QString::fromUtf8("label_2"));
         label_2->setGeometry(QRect(500, 380, 161, 16));
-        selectLoadCell = new QSpinBox(SpanCalibration);
-        selectLoadCell->setObjectName(QString::fromUtf8("selectLoadCell"));
-        selectLoadCell->setEnabled(false);
-        selectLoadCell->setGeometry(QRect(670, 400, 43, 24));
-        selectLoadCell->setMinimum(1);
-        calibrateLoadCell = new QPushButton(SpanCalibration);
-        calibrateLoadCell->setObjectName(QString::fromUtf8("calibrateLoadCell"));
-        calibrateLoadCell->setEnabled(false);
-        calibrateLoadCell->setGeometry(QRect(720, 400, 111, 23));
-        label_3 = new QLabel(SpanCalibration);
-        label_3->setObjectName(QString::fromUtf8("label_3"));
-        label_3->setEnabled(false);
-        label_3->setGeometry(QRect(670, 380, 161, 16));
         ControllerSelect = new QSpinBox(SpanCalibration);
         ControllerSelect->setObjectName(QString::fromUtf8("ControllerSelect"));
         ControllerSelect->setGeometry(QRect(10, 400, 43, 24));
@@ -103,8 +87,6 @@ public:
         PotCalButton->setText(QCoreApplication::translate("SpanCalibration", "Add Cal Point", nullptr));
         label->setText(QCoreApplication::translate("SpanCalibration", "Target Inches", nullptr));
         label_2->setText(QCoreApplication::translate("SpanCalibration", "Current total span", nullptr));
-        calibrateLoadCell->setText(QCoreApplication::translate("SpanCalibration", "Calibrate Load", nullptr));
-        label_3->setText(QCoreApplication::translate("SpanCalibration", "Select Load Cell", nullptr));
         label_4->setText(QCoreApplication::translate("SpanCalibration", "Select Controller", nullptr));
     } // retranslateUi
 

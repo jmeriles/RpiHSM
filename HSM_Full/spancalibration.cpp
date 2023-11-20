@@ -83,7 +83,7 @@ SpanCalibration::SpanCalibration(QMainWindow *parent, hsm_full *source) :
     //connect(ui5->PotCalButton, &QPushButton::released,this,&SpanCalibration::potCal);
     connect(ui5->PotCalButton, &QPushButton::released,this,&SpanCalibration::potCal);
     //connect(ui5->activatePotCal, &QCheckBox::toggled,this,&SpanCalibration::activatePotCal);
-    connect(ui5->calibrateLoadCell, &QPushButton::released,this,&SpanCalibration::loadCal);
+    //connect(ui5->calibrateLoadCell, &QPushButton::released,this,&SpanCalibration::loadCal);
     //window->cl
     closeCallback = [&](){
         timer->start();
@@ -370,11 +370,11 @@ void SpanCalibration::potCal() {
             potCalibrationFile.open("potCal2.txt",std::ofstream::out | std::ofstream::trunc);
             printf("Saving Pot Calibration\n");
             for(int i = 0; i < 4096; i++){
-                sourcefunction->serialWrite(1, 14, i);
+                sourcefunction->serialWrite(2, 14, i);
                 delay(1);
                 int origVol = sourcefunction->serialRead(controlChannel, 11, 3);
                 int diffVol = sourcefunction->serialRead(controlChannel, 11, 2);
-                double zeroVol = -(diffVol * diffGain - origVol);
+                double zeroVol = -((diffVol * diffGain + diffIntercept) - origVol);
                 zeroData.push_back(zeroVol);
                 std::cout << "orig Vol:  " << origVol << "  Diff Vol:  " << diffVol << "  Zero Voltage:  " << zeroVol << "\n";
             }
@@ -395,7 +395,7 @@ void SpanCalibration::potCal() {
     ui5->SpanCalButton->setEnabled(true);
 }
 
-void SpanCalibration::loadCal() {
+/*void SpanCalibration::loadCal() {
     //Should do an auto tuning of load cell. improve in future
     int channel = ui5->selectLoadCell->value();
     //channel = 1; //remove this
@@ -417,7 +417,7 @@ void SpanCalibration::loadCal() {
         ui5->Instructions->setText(newText);
     }
 
-}
+}*/
 
 SpanCalibration::~SpanCalibration()
 {

@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from Model import Model
 from Element import Element
-from pprint import pprint
 
 def InitializeAlphaOS(myModel,el,GM):
     print("Check 1")
@@ -11,6 +10,12 @@ def InitializeAlphaOS(myModel,el,GM):
     print("Check 1")
     influence = []
     print(myModel.K)
+    myModel.Q = []
+    myModel.V = []
+    myModel.P_eff = []
+    myModel.P_m = []
+    myModel.P_r = []
+    myModel.P_tot = []
     
     if myModel.ModelSet[0]=='Planar':
         for i in range(len(myModel.FDOF)):
@@ -24,11 +29,11 @@ def InitializeAlphaOS(myModel,el,GM):
     else:
         for i in range(len(myModel.FDOF)):
             if (myModel.FDOF[i]+6) % 6 == 0 and myModel.DynOp[2][0]!=0:
-                influence.append(1)
+                influence.append(myModel.DynOp[2][0])
             elif (myModel.FDOF[i]+6-1) % 6==0 and myModel.DynOp[2][1]!=0:
-                influence.append(1)
+                influence.append(myModel.DynOp[2][1])
             elif (myModel.FDOF[i]+6-2) % 6==0 and myModel.DynOp[2][2]!=0:
-                influence.append(1)
+                influence.append(myModel.DynOp[2][2])
             else:
                 influence.append(0)
 
@@ -42,6 +47,8 @@ def InitializeAlphaOS(myModel,el,GM):
     myModel.uddot = np.zeros((len(myModel.FDOF),GM.shape[0]))
     myModel.u_pred = np.zeros((len(myModel.FDOF),GM.shape[0]))
     myModel.P_tot = np.zeros((len(myModel.FDOF),GM.shape[0]))
+    myModel.P_m = np.zeros((len(myModel.FDOF),GM.shape[0]))
+    myModel.P_r = np.zeros((len(myModel.FDOF),GM.shape[0]))
                            
     myModel.P=np.zeros((len(myModel.FDOF),GM.shape[0]))
     myModel.alpha = myModel.DynOp[0]
@@ -56,16 +63,28 @@ def InitializeAlphaOS(myModel,el,GM):
     myModel.P_next=myModel.P[:,0]-np.transpose(np.matmul(M,GM[0]*np.transpose(myModel.influence)))
 
     myModel.m_eff = M + (1+myModel.alpha)*dt*myModel.gamma*C + dt**2*myModel.Beta*(1+myModel.alpha)*K
-    print(myModel.m_eff)
+    #print(myModel.m_eff)
+    #print(M)
+    #print((1+myModel.alpha)*dt*myModel.gamma*C)
+    #print(dt**2*myModel.Beta*(1+myModel.alpha)*K)
     myModel.u_pred[:,1] = myModel.u[:,0]+dt*myModel.udot[:,0]+(dt**2)*(1-2*myModel.Beta)*myModel.uddot[:,0]/2
 
-
-    P_resisting = myModel.Kh@myModel.u_pred[:,1]
+    if(myModel.hybrid == 1):
+        P_resisting = myModel.Kh@myModel.u_pred[:,1]
+    else:
+        P_resisting = myModel.K@myModel.u_pred[:,1]
+         
 
     P_old = P0
     P_m = np.zeros(len(myModel.FDOF))
-    print(myModel.mDOF[0]);
-    P_m[myModel.mDOF[0][0]] = 0
+
+    #print(myModel.mDOF[0]);
+    
+    if(myModel.hybrid == 1):
+        P_m[myModel.mDOF[0][0]] = 0
+        retUddot = myModel.uddot[myModel.mDOF[0][0],0]
+    else:
+        retUddot = 0;
     myModel.P_tot[:,0] = P_m+P_resisting
 
 
@@ -75,26 +94,28 @@ def InitializeAlphaOS(myModel,el,GM):
     
     print("Test")
     print(GM)
-
-    return (myModel, myModel.uddot[myModel.mDOF[0][0],0])
-
-def AlphaOS(myModel,meas_f,GM,i):
-    #print("running code")
-    i = i - 1
-    #print("Meas f is")
-    #print(meas_f)
-    A = GM[i]
-    ##print(A)
-    #print("Is Model Empty")
-    #print(myModel == None)
-    dt = myModel.DynOp[1]
-    #print(myModel.C)
     
-    C=myModel.C
+    
+    return (myModel, retUddot)
+
+def AlphaOS(myModel,el,meas_f,GM,i):
+    #print("Hello")
+    #print(meas_f)
+    #i = i-1
+    #print(i)
+
+    A = GM[i]
+
+    dt = myModel.DynOp[1]
+
+    C=np.array(myModel.C)
+    #print(C)
 
     K=np.array(myModel.K)
 
     M=np.array(myModel.M)
+    #print(K)
+    #print(M)
 
     Pi = myModel.P_next
     #print(GM)
@@ -110,24 +131,44 @@ def AlphaOS(myModel,meas_f,GM,i):
     #print("PyCheck 7")
     P_m = np.zeros(len(myModel.FDOF))
     #print("PyCheck 8")
-    #print(myModel.mDOF)
+    delU = myModel.u_pred[:,i] - myModel.u_pred[:,i - 1]
     for l in range(len(myModel.mDOF)):
+        #This works right now, but not sure it would work if mDOF was like 0 and 3 b/c meas_f wouldn't
+        #be long enough
         P_m[myModel.mDOF[l][0]] = meas_f[myModel.mDOF[l][0]]
         
 
     #print("PyCheck 9")
     P_old = np.copy(myModel.P_tot[:,i])
     #print("PyCheck 10")
-    P_resisting = myModel.Kh@myModel.u_pred[:,i]
+    if(myModel.hybrid == 1):
+        #P_resisting = myModel.Kh @ myModel.u_pred[:,i]
+        P_resisting = myModel.stateDeterminationForAlphaOS(el,delU)
+    else:
+        #P_resisting = myModel.K @ myModel.u_pred[:,i]
+        P_resisting = myModel.stateDeterminationForAlphaOS(el,delU)
+        if(i == 2):
+            print(myModel.K @ myModel.u_pred[:,i] - P_resisting)
+    
+
     #print("PyCheck 11")
+    myModel.P_m[:,i] = P_m
+    myModel.P_r = P_resisting
     myModel.P_tot[:,i] = P_m+P_resisting
+    
+
     #print("PyCheck 12")
     P_eff = (1-myModel.alpha)*myModel.P_next+myModel.alpha*Pi-(1-myModel.alpha)*myModel.P_tot[:,i]-myModel.alpha*P_old- ((1-myModel.alpha)*C*dt*(1-myModel.gamma)+myModel.alpha*(dt**2)*myModel.Beta*K)@myModel.uddot[:,i].T-C@myModel.udot[:,i].T
     #print("PyCheck 13")
     P_eff = np.array(P_eff)
+    myModel.P_eff.append(P_eff)
+    myModel.GM.append(GM[i+1])
     #print("PyCheck 3")
     #print(np.shape(P_eff[0]))
     myModel.uddot[:,i+1] = np.linalg.solve(myModel.m_eff,P_eff[0].T)
+    if(i == 0):
+        print("acc")
+        print(myModel.uddot[:,i + 1])
     #print("PyCheck 14")
     
 
@@ -137,7 +178,8 @@ def AlphaOS(myModel,meas_f,GM,i):
     #print("PyCheck 16")
     myModel.u_pred[:,i+1] = myModel.u[:,i]+dt*myModel.udot[:,i+1]+(dt**2)*(1-2*myModel.Beta)*myModel.uddot[:,i+1]/2
     #print("PyCheck 17")
-    #print(Model.u_pred[:,i+1])
+    #print(myModel.u_pred[:,i+1])
+
     u_next = np.zeros(len(myModel.mDOF))
     udot_next = np.zeros(len(myModel.mDOF))
     uddot_next = np.zeros(len(myModel.mDOF))
@@ -148,6 +190,7 @@ def AlphaOS(myModel,meas_f,GM,i):
         u_next[j] = (myModel.u_pred[j,i+1])
         udot_next[j] = (myModel.udot[j,i+1])
         uddot_next[j] = (myModel.uddot[j,i+1])
+        
     #print(u_next[0])
     return (myModel,np.array(u_next),np.array(udot_next),np.array(uddot_next))
 #Model.u_pred[Model.mDOF[0],i+1]

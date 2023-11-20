@@ -21,7 +21,6 @@
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QSlider>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QTextBrowser>
@@ -41,9 +40,7 @@ public:
     QWidget *centralWidget;
     QwtPlot *qwtPlot;
     QPushButton *SpanButton;
-    QLCDNumber *CommandNum;
     QLCDNumber *CurPos;
-    QSlider *horizontalSlider;
     QLCDNumber *Offset;
     QLabel *label;
     QLabel *label_2;
@@ -54,7 +51,6 @@ public:
     QLCDNumber *Force;
     QLabel *label_6;
     QPushButton *CommandButton;
-    QPushButton *SliderButton;
     QLabel *label_7;
     QLabel *label_8;
     QLabel *label_9;
@@ -78,7 +74,6 @@ public:
     QPushButton *AmpTestButton;
     QLabel *label_11;
     QDoubleSpinBox *CommandInput_2;
-    QPushButton *SliderButton_2;
     QLabel *label_12;
     QPushButton *CommandButton_2;
     QLCDNumber *CurSpan_2;
@@ -88,8 +83,6 @@ public:
     QPushButton *zeroButton_2;
     QLabel *label_14;
     QLabel *label_15;
-    QSlider *horizontalSlider_2;
-    QLCDNumber *CommandNum_2;
     QLabel *label_16;
     QLCDNumber *Offset_2;
     QLabel *label_17;
@@ -215,23 +208,10 @@ public:
         SpanButton->setObjectName(QString::fromUtf8("SpanButton"));
         SpanButton->setEnabled(false);
         SpanButton->setGeometry(QRect(610, 830, 101, 30));
-        CommandNum = new QLCDNumber(centralWidget);
-        CommandNum->setObjectName(QString::fromUtf8("CommandNum"));
-        CommandNum->setEnabled(false);
-        CommandNum->setGeometry(QRect(200, 630, 64, 31));
         CurPos = new QLCDNumber(centralWidget);
         CurPos->setObjectName(QString::fromUtf8("CurPos"));
         CurPos->setEnabled(false);
         CurPos->setGeometry(QRect(400, 540, 64, 31));
-        horizontalSlider = new QSlider(centralWidget);
-        horizontalSlider->setObjectName(QString::fromUtf8("horizontalSlider"));
-        horizontalSlider->setEnabled(false);
-        horizontalSlider->setGeometry(QRect(29, 630, 161, 26));
-        horizontalSlider->setMinimum(0);
-        horizontalSlider->setMaximum(4096);
-        horizontalSlider->setValue(2048);
-        horizontalSlider->setSliderPosition(2048);
-        horizontalSlider->setOrientation(Qt::Horizontal);
         Offset = new QLCDNumber(centralWidget);
         Offset->setObjectName(QString::fromUtf8("Offset"));
         Offset->setEnabled(false);
@@ -273,10 +253,6 @@ public:
         CommandButton->setObjectName(QString::fromUtf8("CommandButton"));
         CommandButton->setEnabled(false);
         CommandButton->setGeometry(QRect(110, 570, 131, 30));
-        SliderButton = new QPushButton(centralWidget);
-        SliderButton->setObjectName(QString::fromUtf8("SliderButton"));
-        SliderButton->setEnabled(false);
-        SliderButton->setGeometry(QRect(40, 660, 131, 30));
         label_7 = new QLabel(centralWidget);
         label_7->setObjectName(QString::fromUtf8("label_7"));
         label_7->setEnabled(false);
@@ -368,10 +344,6 @@ public:
         CommandInput_2->setGeometry(QRect(760, 570, 71, 32));
         CommandInput_2->setMinimum(-100000000.000000000000000);
         CommandInput_2->setMaximum(100000000.000000000000000);
-        SliderButton_2 = new QPushButton(centralWidget);
-        SliderButton_2->setObjectName(QString::fromUtf8("SliderButton_2"));
-        SliderButton_2->setEnabled(false);
-        SliderButton_2->setGeometry(QRect(750, 660, 131, 30));
         label_12 = new QLabel(centralWidget);
         label_12->setObjectName(QString::fromUtf8("label_12"));
         label_12->setEnabled(false);
@@ -408,19 +380,6 @@ public:
         label_15->setObjectName(QString::fromUtf8("label_15"));
         label_15->setEnabled(false);
         label_15->setGeometry(QRect(770, 540, 101, 22));
-        horizontalSlider_2 = new QSlider(centralWidget);
-        horizontalSlider_2->setObjectName(QString::fromUtf8("horizontalSlider_2"));
-        horizontalSlider_2->setEnabled(false);
-        horizontalSlider_2->setGeometry(QRect(739, 630, 161, 26));
-        horizontalSlider_2->setMinimum(0);
-        horizontalSlider_2->setMaximum(4096);
-        horizontalSlider_2->setValue(2048);
-        horizontalSlider_2->setSliderPosition(2048);
-        horizontalSlider_2->setOrientation(Qt::Horizontal);
-        CommandNum_2 = new QLCDNumber(centralWidget);
-        CommandNum_2->setObjectName(QString::fromUtf8("CommandNum_2"));
-        CommandNum_2->setEnabled(false);
-        CommandNum_2->setGeometry(QRect(910, 630, 64, 31));
         label_16 = new QLabel(centralWidget);
         label_16->setObjectName(QString::fromUtf8("label_16"));
         label_16->setEnabled(false);
@@ -863,7 +822,6 @@ public:
         label_5->setText(QCoreApplication::translate("hsm_full", "Input Span:", nullptr));
         label_6->setText(QCoreApplication::translate("hsm_full", "Force Reading", nullptr));
         CommandButton->setText(QCoreApplication::translate("hsm_full", "Send Command", nullptr));
-        SliderButton->setText(QCoreApplication::translate("hsm_full", "Activate", nullptr));
         label_7->setText(QCoreApplication::translate("hsm_full", "P", nullptr));
         label_8->setText(QCoreApplication::translate("hsm_full", "I", nullptr));
         label_9->setText(QCoreApplication::translate("hsm_full", "D", nullptr));
@@ -878,7 +836,6 @@ public:
         label_10->setText(QCoreApplication::translate("hsm_full", "Approx Stiffness", nullptr));
         AmpTestButton->setText(QCoreApplication::translate("hsm_full", "Amp Test", nullptr));
         label_11->setText(QCoreApplication::translate("hsm_full", "Offset from Zero", nullptr));
-        SliderButton_2->setText(QCoreApplication::translate("hsm_full", "Activate", nullptr));
         label_12->setText(QCoreApplication::translate("hsm_full", "Approx Stiffness", nullptr));
         CommandButton_2->setText(QCoreApplication::translate("hsm_full", "Send Command", nullptr));
         label_13->setText(QCoreApplication::translate("hsm_full", "Current Span:", nullptr));

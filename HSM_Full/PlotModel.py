@@ -34,6 +34,8 @@ class PlotModel:
                     x.append(el[i].node[1][0])
                     y.append(el[i].node[0][1])
                     y.append(el[i].node[1][1])
+                    
+                    
                 else:
                     xh.append(el[i].node[0][0])
                     xh.append(el[i].node[1][0])
@@ -254,10 +256,11 @@ class PlotModel:
                         #There is a discrepancy in my DOFS, making DOF vector be one indexed
                         #and FDOF/BDOF be 0 indexed. I need to change this, but it might have
                         #a bunch of repercussions...
-                        if (Model.DOF[i][j] - 1) in Model.hDOF:
+                        if (Model.DOF[i][j]) in Model.hDOF:
                             #Might want to simplify this to a draw arrow function 
                             #with a color, label and direction
-                            HybridDof = np.where(np.array(Model.hDOF) == (Model.DOF[i][j] - 1))[0][0] + 1
+                            HybridDof = np.where(np.array(Model.hDOF) == (Model.DOF[i][j]))[0][0]
+                            HybridDof = Model.mDOF[HybridDof][0] + 1
                             if j==0:
                                 Lx=np.linspace(0,maxL/10,2)+Model.NODE[i][0]
                                 Ly=np.zeros(2)+Model.NODE[i][1]
@@ -389,6 +392,8 @@ class PlotModel:
             minY = 0
             minZ = 0
             maxL = 0
+            fig=plt.figure(198765)
+            ax = fig.add_subplot(111, projection='3d')
             for i in range(Model.numel):
                 
                 #Determine outer bounds for plot scaling
@@ -414,6 +419,11 @@ class PlotModel:
                     y.append(el[i].node[1][1])
                     z.append(el[i].node[0][2])
                     z.append(el[i].node[1][2])
+                    
+                    ax.plot(x,z,y,'b')
+                    x = []
+                    y = []
+                    z = []
                 else:
                     xh.append(el[i].node[0][0])
                     xh.append(el[i].node[1][0])
@@ -447,18 +457,12 @@ class PlotModel:
                     
                     
     
-            
-            fig=plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            ax.plot(x,z,y)
-            
             if Model.hybrid == 1:
                 ax.plot(xh,zh,yh,'g--')
             
             ax.set_xlabel('x axis')
             ax.set_ylabel('z axis')
             ax.set_zlabel('y axis')
-            
             
             print("min x")
             print(minX)
@@ -484,10 +488,11 @@ class PlotModel:
                 maxZ = max(maxX,maxY,maxZ)
                 minZ = min(minX,minY,minZ)
                 
-            
-            ax.set_xlim3d(1.1 * minX, 1.1 * maxX)
-            ax.set_ylim3d(1.1 * minZ, 1.1 * maxZ)
-            ax.set_zlim3d(1.1 * minY, 1.1 * maxY)
+            plotmax = max(maxX,maxY,maxZ)
+            plotmin = min(minX,minY,minZ)
+            ax.set_xlim3d(1.1 * plotmin, 1.1 * plotmax)
+            ax.set_ylim3d(1.1 * plotmin, 1.1 * plotmax)
+            ax.set_zlim3d(1.1 * plotmin, 1.1 * plotmax)
             
             
             #Find how many BCs we have and try to represent them in the plot
@@ -547,8 +552,9 @@ class PlotModel:
                        #and FDOF/BDOF be 0 indexed. I need to change this, but it might have
                        #a bunch of repercussions...
                        
-                       if (Model.DOF[i][j] - 1) in Model.hDOF:
-                            HybridDof = np.where(np.array(Model.hDOF) == (Model.DOF[i][j] - 1))[0][0] + 1
+                       if (Model.DOF[i][j]) in Model.hDOF:
+                            HybridDof = np.where(np.array(Model.hDOF) == (Model.DOF[i][j]))[0][0] 
+                            HybridDof = Model.mDOF[HybridDof][0] + 1
                             #Still could be simplified to a plot arrow function
                             if j==0:
                                 Lx=np.linspace(0,maxL/10,2)+Model.NODE[i][0]
@@ -1493,7 +1499,12 @@ class PlotModel:
         
         if Model.ModelSet[0]=='Planar':
             fig=plt.figure()
-            ax = fig.add_subplot(111)
+            
+            if(Model.hybrid == 0):
+                ax = fig.add_subplot(111)
+            else:
+                ax = fig.add_subplot(121)
+                ax2 = fig.add_subplot(122)
           
             ax.set_xlabel('x axis')
             ax.set_ylabel('y axis')
@@ -1535,8 +1546,8 @@ class PlotModel:
                     el_boun=el[i].BOUN[0]+el[i].BOUN[1]
                     Uel=np.zeros((1,Model.nf))
                     for j in range(len(el_boun)):
-                        if el_boun[j]==0:
-                            Uel[0,j]=Model.Udy[Model.FDOF.index(el[i].id_v[j]-1),k]
+                        if el_boun[j]==0  and el[i].id_v[j] in list(Model.FDOF):
+                            Uel[0,j]=Model.Udy[list(Model.FDOF).index(el[i].id_v[j]),k]
                         else:
                             Uel[0,j]=0
                     
@@ -1591,36 +1602,58 @@ class PlotModel:
             animation = FuncAnimation(fig,func=DefShapeFrame,frames=range(Model.Udy.shape[1]),fargs=(Model,el,scale,),interval=10,blit=True)
             plt.show()
         else:
-            fig=plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
+            fig=plt.figure(figsize = (10,5))
+            
+            if(Model.hybrid == 0):
+                ax = fig.add_subplot(111, projection='3d')
+            else:
+                ax2 = fig.add_subplot(121)
+                ax = fig.add_subplot(122, projection='3d')
+                ax2.set_xlim(0,3000)
+                ax2.set_ylim(min(Model.u[0]) - .1 * abs(min(Model.u[0])) , max(Model.u[0]) + .1* abs(max(Model.u[0])))
           
             ax.set_xlabel('x axis')
             ax.set_ylabel('z axis')
             ax.set_zlabel('y axis')
-            maxposx=0
-            minposx=0
-            maxposy=0
-            minposy=0
-            maxposz=0
-            minposz=0
+            maxX=0
+            minX=0
+            maxY=0
+            minY=0
+            maxZ=0
+            minZ=0
             for i in range(len(el)):
                 for j in range(len(el[i].node)):
-                    if el[i].node[j][0]>maxposx:
-                        maxposx=el[i].node[j][0]
-                    if el[i].node[j][0]<minposx:
-                        minposx=el[i].node[j][0]
-                    if el[i].node[j][1]>maxposy:
-                        maxposy=el[i].node[j][1]
-                    if el[i].node[j][1]<minposy:
-                        minposy=el[i].node[j][1]
-                    if el[i].node[j][2]>maxposz:
-                        maxposz=el[i].node[j][2]
-                    if el[i].node[j][2]<minposz:
-                        minposz=el[i].node[j][2]
+                    if el[i].node[j][0]>maxX:
+                        maxX=el[i].node[j][0]
+                    if el[i].node[j][0]<minX:
+                        minX=el[i].node[j][0]
+                    if el[i].node[j][1]>maxY:
+                        maxY=el[i].node[j][1]
+                    if el[i].node[j][1]<minY:
+                        minY=el[i].node[j][1]
+                    if el[i].node[j][2]>maxZ:
+                        maxZ=el[i].node[j][2]
+                    if el[i].node[j][2]<minZ:
+                        minZ=el[i].node[j][2]
+                        
+            if (maxX == 0 and minX == 0):
+                maxX = max(maxX,maxY,maxZ)
+                minX = min(minX,minY,minZ)
+            
+            if (maxY == 0 and minY == 0):
+                maxY = max(maxX,maxY,maxZ)
+                minY = min(minX,minY,minZ)
+            
+            if (maxZ == 0 and minZ == 0):
+                maxZ = max(maxX,maxY,maxZ)
+                minZ = min(minX,minY,minZ)
+                
+            plotmax = max(maxX,maxY,maxZ)
+            plotmin = min(minX,minY,minZ)
+            ax.set_xlim3d(1.1 * plotmin, 1.1 * plotmax)
+            ax.set_ylim3d(1.1 * plotmin, 1.1 * plotmax)
+            ax.set_zlim3d(1.1 * plotmin, 1.1 * plotmax)
                             
-            ax.set_xlim(minposx-maxposx/10,maxposx+maxposx/10)
-            ax.set_ylim(minposz-maxposz/10,maxposz+maxposz/10)
-            ax.set_zlim(minposy-maxposy/10,maxposy+maxposy/10)
             
             def DefShapeFrame(k,Model,el,scale):
             #Plot deformed shape for a specific time
@@ -1632,7 +1665,7 @@ class PlotModel:
                     Uel=np.zeros((1,Model.nf))
                     for j in range(len(el_boun)):
                         if el_boun[j]==0:
-                            Uel[0,j]=Model.Udy[Model.FDOF.index(el[i].id_v[j]-1),k]
+                            Uel[0,j]=Model.Udy[Model.FDOF.index(el[i].id_v[j]),k]
                         else:
                             Uel[0,j]=0
                     
@@ -1685,11 +1718,22 @@ class PlotModel:
                     def_g[1]=[(x+el[i].node[0][1]) for x in def_g[1]]
                     def_g[2]=[(x+el[i].node[0][2]) for x in def_g[2]]
                     
-                    defshape.extend(ax.plot(def_g[0],def_g[2],def_g[1],color='r',linewidth=.75))
+                    if el[i].hybrid == 1:
+                        defshape.extend(ax.plot(def_g[0],def_g[2],def_g[1],color='g',linewidth=.75))
+                    else:
+                        defshape.extend(ax.plot(def_g[0],def_g[2],def_g[1],color='r',linewidth=.75))
                 
+                if (Model.hybrid == 1):
+                    #time step hard coded in, should be fixed
+                    #Time = np.arange(0,len(Model.u[Model.mDOF[0][0]])*.01)
+                    defshape.extend([ax2.scatter(k,Model.u[Model.mDOF[0][0]][k],color = 'r',zorder = 100)])
+                    defshape.extend(ax2.plot(Model.u[Model.mDOF[0][0]][0:3000],'b'))
+                    
                 return defshape
+            
               
-            animation = FuncAnimation(fig,func=DefShapeFrame,frames=range(Model.Udy.shape[1]),fargs=(Model,el,scale,),interval=10,blit=True)
+            #animation = FuncAnimation(fig,func=DefShapeFrame,frames=range(Model.Udy.shape[1]),fargs=(Model,el,scale,),interval=1,blit=True)
+            animation = FuncAnimation(fig,func=DefShapeFrame,frames=range(3000),fargs=(Model,el,scale,),interval=1,blit=True)
             plt.show()
         return animation
     

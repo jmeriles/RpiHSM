@@ -111,54 +111,6 @@
     <string>Current total span</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="selectLoadCell">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="geometry">
-    <rect>
-     <x>670</x>
-     <y>400</y>
-     <width>43</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="calibrateLoadCell">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="geometry">
-    <rect>
-     <x>720</x>
-     <y>400</y>
-     <width>111</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Calibrate Load</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="geometry">
-    <rect>
-     <x>670</x>
-     <y>380</y>
-     <width>161</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Select Load Cell</string>
-   </property>
-  </widget>
   <widget class="QSpinBox" name="ControllerSelect">
    <property name="geometry">
     <rect>

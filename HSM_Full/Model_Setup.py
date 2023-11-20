@@ -40,6 +40,7 @@ def Model_Setup(NODE,CON,BC,el_prop,el_rel,customProps,el_load,node_load,modelPr
         dim = 'Planar'
     elif modelProp[0] == 1:
         dim = '3D'
+        print('3D')
     else:
         print("ERROR, dimension is neither 2D nor 3D")
     print("Pycheck1")
@@ -69,25 +70,41 @@ def Model_Setup(NODE,CON,BC,el_prop,el_rel,customProps,el_load,node_load,modelPr
                 el_rel[i][j] = np.inf
     print(el_rel)
                        
-        
+    print(el_prop)    
     for i in range (myModel.numel):
         if dim == '3D':
             el[i].Iy=el_prop[i][4]
+            print('test1')
             el[i].Iz=el_prop[i][5]
+            print('test2')
             el[i].A=el_prop[i][1]
+            print('test2')
             el[i].E=el_prop[i][0]
-            el[i].G=1/(2*(1+el_prop[i][3]))
+            print('test3')
+            el[i].G=el[i].E/(2*(1+el_prop[i][3]))
+            print('test4')
             el[i].J=el_prop[i][2]
+            print('test5')
             el[i].rho=el_prop[i][6]
+            print('test6')
             el[i].hybrid = el_prop[i][7]
-            el[i].custom = el_prop[i][9]
+            print('test7')
+            el[i].custom = el_prop[i][8]
+            print('test8')
             el[i].w_x = el_load[i][0]
+            print('test9')
             el[i].w_y = el_load[i][1]
+            print('test10')
             el[i].w_z = el_load[i][2]
+            print('test11')
             el[i].m_x = el_load[i][3]
+            print('test12')
             el[i].m_y = el_load[i][4]
+            print('test13')
             el[i].m_z = el_load[i][5]
+            print('test14')
             el[i].REL = el_rel[i].tolist()
+            print('test15')
         elif dim == "Planar":
  
             el[i].Iz=el_prop[i][2]

@@ -23,6 +23,12 @@
       <height>31</height>
      </rect>
     </property>
+    <property name="minimum">
+     <double>-1000000000.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>1000000000.000000000000000</double>
+    </property>
    </widget>
    <widget class="QDoubleSpinBox" name="y_pos_input">
     <property name="geometry">
@@ -32,6 +38,12 @@
       <width>67</width>
       <height>31</height>
      </rect>
+    </property>
+    <property name="minimum">
+     <double>-100000000.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>1000000000.000000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="z_pos_input">
@@ -45,6 +57,12 @@
       <width>67</width>
       <height>31</height>
      </rect>
+    </property>
+    <property name="minimum">
+     <double>-100000000.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>10000000000.000000000000000</double>
     </property>
    </widget>
    <widget class="QPushButton" name="add_node">
@@ -149,7 +167,7 @@
      <number>10</number>
     </property>
     <property name="maximum">
-     <double>1000000.000000000000000</double>
+     <double>100000000000000000.000000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="A_input">
@@ -165,7 +183,7 @@
      <number>5</number>
     </property>
     <property name="maximum">
-     <double>10000000000000000303786028427003666890752.000000000000000</double>
+     <double>1000000000000000.000000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="J_input">
@@ -184,7 +202,7 @@
      <number>5</number>
     </property>
     <property name="maximum">
-     <double>1000000.000000000000000</double>
+     <double>10000000000000000.000000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="v_input">
@@ -222,7 +240,7 @@
      <number>10</number>
     </property>
     <property name="maximum">
-     <double>1000000.000000000000000</double>
+     <double>100000000000000000.000000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="Iz_input">
@@ -238,7 +256,7 @@
      <number>10</number>
     </property>
     <property name="maximum">
-     <double>1000000.000000000000000</double>
+     <double>10000000000000000.000000000000000</double>
     </property>
    </widget>
    <widget class="QLabel" name="label">
@@ -1234,7 +1252,7 @@
      </rect>
     </property>
     <property name="decimals">
-     <number>10</number>
+     <number>30</number>
     </property>
     <property name="maximum">
      <double>1000000.000000000000000</double>
@@ -1302,7 +1320,10 @@
      </rect>
     </property>
     <property name="decimals">
-     <number>4</number>
+     <number>10</number>
+    </property>
+    <property name="minimum">
+     <double>-1000000000.000000000000000</double>
     </property>
     <property name="maximum">
      <double>100000000000000.000000000000000</double>

@@ -74,7 +74,7 @@ void Interlock::setMaxForceInterlock() {
 }
 
 void Interlock::setMinForceInterlock() {
-    sourcefunction1->setMaxForce(ui6->ControllerSelect->value(), ui6->MaxForceInput->value());
+    sourcefunction1->setMinForce(ui6->ControllerSelect->value(), ui6->MinForceInput->value());
     sourcefunction1->saveInterlocks();
 }
 
